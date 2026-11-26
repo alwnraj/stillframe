@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie night · Stillframe</title>
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/night.css">
+  <script src="/night.js" defer></script>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead"><a href="/" class="wordmark">stillframe</a><a href="/">Solo lookup</a></header>
+  <main>
+    <section class="night-intro"><h1>Movie night</h1><p>Bring 2–6 friends. Explore your recent films, build a shortlist, and vote.</p></section>
+    <section id="entry" class="night-entry">
+      <form id="night-form" class="collect-form">
+        <h2 id="entry-title">Start a room</h2>
+        <label for="night-username">Your Letterboxd username</label>
+        <div class="input-wrap"><input id="night-username" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="40" placeholder="e.g. dave"></div>
+        <label class="permission"><input id="permission" type="checkbox" required> I have permission to share this account’s public feed with this room.</label>
+        <button id="enter-room" type="submit">Create room</button>
+      </form>
+      <div class="room-rules"><h3>Just for this session</h3><p>Rooms expire after two minutes. No saved rooms, accounts, downloads or application logs.</p><p>Leaving or navigating away ends the room for everyone. Joining on another device requires a reachable host.</p></div>
+    </section>
+    <p id="night-status" class="status" role="status" aria-live="polite" hidden></p>
+    <section id="room" hidden>
+      <div class="room-heading"><div><h2>Your room</h2><p id="room-clock" class="helper"></p></div><button id="leave-room" class="clear-button" type="button">End room</button></div>
+      <div id="invite-panel" class="invite-panel"><label for="invite-link">Room link</label><div><input id="invite-link" readonly autocomplete="off"><button id="copy-invite" class="clear-button" type="button">Copy link</button></div><p class="helper">Each friend joins with their own username before collection starts.</p></div>
+      <ul id="members" class="members" aria-label="Friends in this room"></ul>
+      <button id="start-night" type="button">Collect feeds</button>
+      <section id="explore" hidden>
+        <div class="section-heading"><h3>Film constellation</h3><span id="graph-count"></span></div>
+        <p id="graph-note" class="section-note">Connections mean a film appears in a friend’s current RSS feed. No entry does not mean unseen.</p>
+        <div class="constellation"><svg id="constellation" viewBox="0 0 1000 620" role="group" aria-label="Films connected to the friends who logged them"></svg></div>
+        <p id="graph-empty" class="no-data" hidden>No movie entries in the collected feeds.</p>
+        <div class="night-columns">
+          <section class="browse"><div class="section-heading"><h3>Choose a film</h3><span id="film-total"></span></div><label class="helper" for="film-search">Search collected films</label><input id="film-search" type="search" autocomplete="off"><ul id="candidates" class="candidates"></ul></section>
+          <section class="shortlist"><div class="section-heading"><h3>Shortlist</h3><span id="shortlist-count"></span></div><p class="section-note">Up to six films. Each friend can nominate two.</p><div id="film-detail" class="film-detail" hidden></div><p id="vote-summary" aria-live="polite"></p><div id="nominees"></div><p id="outcome" class="outcome" role="status" hidden></p></section>
+        </div>
+      </section>
+    </section>
+  </main>
+  <footer>Public RSS windows, not full histories. Not affiliated with Letterboxd.</footer>
+</div>
+</body>
+</html>

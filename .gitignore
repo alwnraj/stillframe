@@ -1,0 +1,10 @@
+node_modules/
+output/
+.browser-profile/
+
+# Local configuration and diagnostics
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log

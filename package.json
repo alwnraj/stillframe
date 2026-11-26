@@ -1,0 +1,13 @@
+{
+  "name": "letterboxd-public-history",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "test:live": "node scripts/test-live.mjs"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": { "playwright": "1.58.2" }
+}
