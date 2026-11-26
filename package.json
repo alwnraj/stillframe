@@ -8,6 +8,13 @@
     "test": "node --test test/*.test.js",
     "test:live": "node scripts/test-live.mjs"
   },
-  "engines": { "node": ">=22" },
-  "dependencies": { "playwright": "1.58.2" }
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "playwright": "1.58.2"
+  },
+  "devDependencies": {
+    "wrangler": "4.160.1"
+  }
 }

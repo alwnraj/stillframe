@@ -8,3 +8,5 @@ output/
 .env.*
 !.env.example
 *.log
+.wrangler/
+.dev.vars

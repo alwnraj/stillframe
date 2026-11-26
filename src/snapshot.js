@@ -5,7 +5,7 @@ const ORIGIN = 'https://letterboxd.com';
 const PATHS = { recent: 'rss/', watchedFilms: 'films/', publicLists: 'lists/', tags: 'tags/', diary: 'diary/', watchlist: 'watchlist/' };
 const sectionsFor = mode => mode === 'extended' ? Object.keys(PATHS) : ['recent'];
 const LIMITS = { recent: 50, feedLists: 50, watchedFilms: 72, publicLists: 12, tags: 120, diary: 50, watchlist: 28 };
-const requireValue = (condition, message) => { if (!condition) throw new Error(message); };
+const requireValue = (condition, message) => { if (!condition) throw Object.assign(new Error(message), { checked: true }); };
 let nextRequestAt = 0; // A process-wide pacing timestamp, never account data.
 async function pace(signal) {
   // Chunk long Retry-After waits to avoid overflowing Node's timer range.
@@ -162,7 +162,8 @@ async function fetchFeed(username, { signal, fetchImpl }) {
       return parseRss(xml);
     } finally { response.body?.cancel().catch(() => {}); }
   } catch (error) {
-    if (signal?.aborted || !['AbortError', 'TimeoutError', 'TypeError'].includes(error.name)) throw error;
+    // Only messages this module wrote reach the result; runtime fetch errors become generic.
+    if (signal?.aborted || error.checked || error.blocked) throw error;
     throw new Error(timeout.aborted ? 'Letterboxd did not respond in time. Collection stopped.' : 'Could not reach Letterboxd. Collection stopped.');
   }
 }
@@ -400,7 +401,10 @@ export async function collectSnapshot(browser, result, { signal, waitForRequest 
 // A lookup owns one browser process. Dispose that process once rather than
 // waiting separately for a routed context and then the same browser.
 export async function launchOwnedBrowser() {
-  const { chromium } = await import('playwright');
+  // A non-literal specifier keeps Workers bundlers from pulling in Playwright;
+  // RSS lookups never reach this function.
+  const playwright = 'playwright';
+  const { chromium } = await import(playwright);
   const server = await chromium.launchServer({ channel: 'chrome', headless: true, host: '127.0.0.1', timeout: 15000 });
   let browser, closing;
   const close = () => closing ??= (async () => {

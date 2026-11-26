@@ -52,8 +52,8 @@ Unchecked does not mean permanently broken. The extended parsers have fixture co
 - [ ] No guarantee of access for every account, network or hosting provider. A correctly handled block is not successful collection.
 - [ ] Two-minute rooms can expire before six slow feeds finish; do not silently extend TTL or skip failures to report success.
 - [ ] RSS does not prove complete watched/liked/rated history or that an absent film is unseen. Feed review text may be an excerpt.
-- [ ] The server binds to localhost. Public GitHub source is not a deployed website. Remote friends require a reachable Node service; room state and pacing are process-local, not shared across instances.
-- [ ] Provider-side logging, remote hosting behavior and multi-instance operation have not been verified. App-level non-retention cannot control copying visible data, forensic RAM/OS recovery, browser/Letterboxd/provider logs or host temporary files.
+- [ ] The local Node server binds to localhost. A Cloudflare Workers port (`worker/index.js`, `wrangler.toml`) keeps all `/api` state in one in-memory Durable Object, so the lock, pacing and rooms stay single-instance. Verified so far: the full app and live checkers in the local `wrangler dev` emulator; the RSS fetch from Cloudflare's network (probe Worker, 10/10 smoke test); and client-disconnect abort reaching a Durable Object in a synthetic production experiment. The full app has not yet been verified on a production deployment.
+- [ ] Worker observability is disabled in config; account-level logging (e.g. Logpush) has not been checked. One global lock and five-second pacing cap the whole site at roughly ten lookups a minute, and there is no per-IP limit. App-level non-retention cannot control copying visible data, forensic RAM/OS recovery, browser/Letterboxd/provider logs or host temporary files.
 - [ ] A username and permission checkbox are not authenticated account ownership. Invite holders can join the lobby; private participant keys authorize room data/actions.
 
 ## Verification and next-agent steps

@@ -13,7 +13,16 @@ npm ci --ignore-scripts --min-release-age=14
 npm start
 ```
 
-Open [the local website](http://127.0.0.1:3000). The server is silent and binds to localhost. Playwright is pinned to 1.58.2; no additional packages were installed for this change.
+Open [the local website](http://127.0.0.1:3000). The local server is silent and binds to localhost. Playwright is pinned to 1.58.2; no additional packages were installed for this change.
+
+## Deploy on Cloudflare (free plan)
+
+```sh
+npx wrangler login
+npx wrangler deploy
+```
+
+`worker/index.js` serves `public/` through the assets binding with the same no-store and CSP headers, and sends every `/api` request to one Durable Object. That object runs the same `src/app.js` handler as the Node server, so the collection lock, pacing, rooms and votes live in one in-memory state. It never uses Durable Object storage or alarms; eviction or a redeploy ends all rooms, like a server restart. Worker observability is disabled in `wrangler.toml`. A client disconnect aborts collection inside the Durable Object in production (`enable_request_signal`); the local `wrangler dev` emulator does not emulate this. Each room poll counts as a Worker request and a Durable Object request (about 720 per six-person room), within the free daily limits for modest use.
 
 ## Collection and outcomes
 
@@ -45,7 +54,7 @@ Rooms, usernames, film summaries, nominations, voting credentials and votes exis
 
 The random invitation ID appears only in the URL fragment and grants permission to join the lobby, not to read member data or vote. Each joining browser receives a separate private voting key held only in page memory. Do not add room persistence, recovery, cookies or browser storage. Room identifiers are temporary capabilities, not saved lookup history. Anyone with the invitation can join before collection starts; usernames are permission-confirmed, not verified Letterboxd logins.
 
-The server still binds to localhost. Separate browser sessions on this computer can join; friends on other devices need a reachable deployment. Deployment and provider logging configuration are not included.
+The local server binds to localhost; separate browser sessions on this computer can join. Friends on other devices need the Cloudflare deployment above. Check the Cloudflare account for Logpush or other account-level logging before inviting real users.
 
 ## Tests
 

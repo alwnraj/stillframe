@@ -103,7 +103,7 @@ export function createNightStore({ collect, startJob, ttlMs = 120000, now = Date
       if (rooms.size >= maxRooms) fail(503, 'All temporary rooms are in use. Try again later.');
       const room = { id: token(), expiresAt: now() + ttlMs, revision: 0, state: 'lobby', members: new Map(), movies: [], nominations: new Map(), votes: new Map(), controller: new AbortController() };
       const person = add(room, input); room.hostId = person.id;
-      room.timer = setTimeout(() => destroy(room), ttlMs); room.timer.unref(); rooms.set(room.id, room);
+      room.timer = setTimeout(() => destroy(room), ttlMs); room.timer.unref?.(); rooms.set(room.id, room);
       return { token: person.key, room: view(room, person.key) };
     },
     peek(id, key) {

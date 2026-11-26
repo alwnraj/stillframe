@@ -36,7 +36,9 @@ Stillframe is a username-only Letterboxd website using Node.js 22+, ES modules, 
 | --- | --- |
 | `src/snapshot.js` | Ephemeral website collector (plain-HTTP RSS fetch and Node RSS parser), validation, coverage, cancellation and bounded cleanup |
 | `src/night.js` | Fixed-lifetime in-memory shared rooms, feed merge, shortlist and votes |
-| `src/server.js` | Silent local HTTP server, static assets and current-request collection endpoint |
+| `src/app.js` | Platform-neutral `Request → Response` handler: routes, guards, busy lock and room endpoints |
+| `src/server.js` | Thin silent Node adapter for local use and tests |
+| `worker/index.js`, `wrangler.toml` | Cloudflare Worker: static assets with headers, one in-memory Durable Object for all `/api` state; no storage, alarms or observability |
 | `public/` | Form, transient results, histogram, collection panels and clearing |
 | `src/scraper.js` | Shared username validation and read-only full-history test helpers; no persistence |
 | `test/`, `scripts/test-live.mjs` | Synthetic regression tests and a non-recording live browser check |
@@ -79,7 +81,7 @@ node scripts/test-night-live.mjs dave davidehrlich
 
 The live script produces no data output or artifacts; check its exit status. Account-specific counts and provider access can change. Use fixture tests to diagnose errors without recording live data. Verify the RSS-only production scope and separate extended regressions, RSS sample histogram, pacing/order and stop-on-block behavior, coverage, cancellation, clearing, expiry, browser storage absence, removed download endpoints, browser errors and mobile layouts.
 
-Documentation-only changes need no browser tests. Update README and tests when changing scope or the in-memory response contract. Report observed local behavior accurately; do not promise reliability on every account or hosting provider. Preserve localhost binding unless deployment/network exposure is requested.
+Documentation-only changes need no browser tests. Update README and tests when changing scope or the in-memory response contract. Report observed local behavior accurately; do not promise reliability on every account or hosting provider. Preserve localhost binding for the Node server. The user requested deployment on Cloudflare Workers (free plan); keep its Durable Object free of storage/alarms and its observability disabled.
 
 Production RSS lookups use one plain HTTPS `fetch` (manual redirects, streamed 4 MiB cap, honest user agent) and never start a browser; `parseRss` parses the feed in Node, with fixture and parity tests against the browser parser. Only extended mode, UI tests and live checkers use a browser: one owned headless browser process, exposed only on loopback for Playwright. Completion and cancellation disconnect the Playwright client, terminate that process and await its exit; they do not wait for a separate routed-context close handshake. A disposal deadline still makes the result incomplete. Fixture tests cover single disposal, cancellation scrubbing and natural process exit after repeated six-context sessions. Preserve bounded client cleanup and fail the unattended checker if leaked handles prevent exit.
 
