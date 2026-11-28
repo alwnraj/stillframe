@@ -231,13 +231,14 @@ test('receipt and iceberg views summarize the feed, render text safely and clear
       assert.equal(await page.locator('#weekdays .seat.taken').count(), 16);
       assert.equal(await page.locator('#era .scale-can').count(), 13);
       assert.equal(await page.locator('#floe .floe-film').count(), 16);
-      // Names run newest to oldest down the berg; long titles are shortened as plain text, never markup.
+      // Names run newest to oldest down the berg and, within a layer, in watch order; long titles are shortened as plain text.
       const names = await page.locator('#floe .floe-name').allTextContents();
       assert.equal(names.length, 16);
-      assert.match(names[0], /^<img src=x .*…$/);
-      assert.deepEqual(names.slice(-3), ['Film 9', 'Film 10', 'Film 11']);
+      assert.equal(await page.locator('#floe .floe-axis').textContent(), '← watched earlier · watched lately →');
+      assert.equal(names[0], '<img src=x…');
+      assert.deepEqual(names.slice(-2), ['Film 11', 'Film 10']);
       assert.equal(await page.locator('#floe .floe-label.empty').count(), 0);
-      assert.equal(await page.locator('#floe-note').textContent(), 'Your iceberg runs deep: most of what you watch is older than a generation. Your deepest dive: Film 11, from the silent era. You have ice at nearly every depth.');
+      assert.equal(await page.locator('#floe-note').textContent(), 'Your iceberg runs deep: most of what you watch is older than a generation. Your deepest dive: Film 11, from the silent era. Lately you have been drifting up toward new releases. You have ice at nearly every depth.');
       await page.getByRole('button', { name: 'Clear now' }).click();
       assert.equal(await page.locator('#extras').isHidden(), true);
       assert.equal(await page.locator('#weekdays *, #era *, #floe *').count(), 0);

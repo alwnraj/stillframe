@@ -216,6 +216,7 @@ body.bake:before,body.bake:after{display:none}
 .floe-fish path{fill:var(--gold);stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round}
 .floe-bubbles circle{fill:none;stroke:#e8f3f4;stroke-width:1.2}
 .floe-bed{fill:#2a1f1b}
+.floe-axis{font:italic 13px Georgia,'Times New Roman',serif;fill:#f4efe2;text-anchor:middle;letter-spacing:.02em}
 .floe-weed path{fill:none;stroke:#5b8a4e;stroke-width:3;stroke-linecap:round}
 .floe-hull{fill:var(--red);stroke:var(--ink);stroke-width:1.5;stroke-linejoin:round}.floe-mast{stroke:var(--ink);stroke-width:2}.floe-flag{fill:var(--gold);stroke:var(--ink);stroke-width:1}
 .floe-line{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:4 3}.floe-knot{stroke:var(--ink);stroke-width:1.5}.floe-lead{fill:#6b5a50;stroke:var(--ink);stroke-width:1.2}

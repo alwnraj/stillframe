@@ -448,19 +448,36 @@ function drawFloe(films) {
   const cx = (width - right) / 2 + 4, widest = (width - right) / 2 - 8, cell = narrow ? 17 : 24, rowH = narrow ? 32 : 40;
   const charWidth = narrow ? 6.2 : 6.9, head = narrow ? 42 : 50;
   const runs = splitYears(dated);
+  // Across each layer runs time watched: the layer is cut into as many columns as its names fit, earliest
+  // watches in the left column and latest on the right. A crowded column spills into the shorter
+  // neighbour beside it, so a busy stretch of watching widens rather than towers.
+  const when = film => day(film.watchedDate)?.getTime() ?? null;
+  const times = dated.map(when).filter(time => time != null), firstWatch = Math.min(...times), lastWatch = Math.max(...times);
+  const along = film => { const time = when(film); return time == null || !(lastWatch > firstWatch) ? .5 : (time - firstWatch) / (lastWatch - firstWatch); };
+  const maxChars = narrow ? 11 : 15;
+  const pack = (group, half) => {
+    const left = cx - half * .86, span = half * 1.72, columns = Math.max(1, Math.floor(span / (cell + 18 + maxChars * charWidth)));
+    const step = span / columns, heights = Array(columns).fill(0);
+    const spots = group.map(film => {
+      const title = film.title || 'Untitled', label = title.length > maxChars ? `${title.slice(0, maxChars - 1).trimEnd()}…` : title;
+      const aim = Math.min(columns - 1, Math.floor(along(film) * columns));
+      const column = [aim, aim - 1, aim + 1].filter(k => k >= 0 && k < columns).reduce((best, k) => heights[k] < heights[best] ? k : best);
+      return { film, title, label, x: left + column * step, row: heights[column]++ };
+    });
+    return { spots, rows: Math.max(...heights) };
+  };
   let y = 120;
   const layers = runs.map((years, i) => {
-    const group = dated.filter(film => years.includes(film.year)).sort((a, b) => b.year - a.year);
+    const group = dated.filter(film => years.includes(film.year)).sort((a, b) => along(a) - along(b) || b.year - a.year);
     const name = depthName(years[0], years.at(-1), i > 0 && decadeOf(years[0]) === decadeOf(runs[i - 1].at(-1)), i < runs.length - 1 && decadeOf(years.at(-1)) === decadeOf(runs[i + 1][0])), label = name[0].toUpperCase() + name.slice(1);
-    // A crowded layer bulges, and packs its names two to a row even on a phone.
+    // A crowded layer bulges so more of it fits side by side.
     const half = widest * Math.max(profileAt(i, runs.length), group.length > 12 ? .96 : group.length > 6 ? .82 : 0);
-    const perRow = Math.max(1, Math.floor(2 * half * .82 / (narrow ? group.length > 12 ? 120 : 160 : group.length > 12 ? 165 : 210)));
-    const height = head + Math.ceil(group.length / perRow) * rowH + 18;
-    const layer = { name, label, group, half, perRow, top: y, height };
+    const packed = pack(group, half), height = head + packed.rows * rowH + 18;
+    const layer = { name, label, group, half, spots: packed.spots, top: y, height };
     y += height;
     return layer;
   });
-  const water = layers[1]?.top ?? y, floor = y, height = floor + 34;
+  const water = layers[1]?.top ?? y, floor = y, height = floor + 50;
   const wobble = (key, spread) => 1 - spread / 2 + hash(key) * spread;
   art.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
@@ -500,21 +517,16 @@ function drawFloe(films) {
   // Films frozen into their layer: a little frame each, bigger for more stars, red when liked, with
   // its name beside it. The names pop in a layer at a time as you scroll down into the deep.
   layers.forEach(layer => {
-    if (!layer.group.length) return;
     const holder = svg(art, 'g', { class: 'floe-layer' });
-    const column = 2 * layer.half * .82 / layer.perRow, left = cx - layer.half * .82;
-    const chars = Math.max(6, Math.floor((column - cell - 12) / charWidth));
-    layer.group.forEach((film, i) => {
-      const row = Math.floor(i / layer.perRow), col = i % layer.perRow;
-      const fx = left + col * column + cell / 2, fy = layer.top + head + row * rowH + rowH / 2;
+    layer.spots.forEach(({ film, title, label, x, row }) => {
+      const fx = x + cell / 2, fy = layer.top + head + row * rowH + rowH / 2;
       const size = film.rating == null ? .7 : .62 + film.rating * .076, w = cell * size, h = cell * .78 * size;
       const item = svg(holder, 'g', { class: `floe-film${film.liked ? ' liked' : ''}${film.rating == null ? ' unrated' : ''}` });
-      const frame = svg(item, 'g', { transform: `rotate(${((hash(`${film.title}r`) - .5) * 26).toFixed(1)} ${fx.toFixed(1)} ${fy.toFixed(1)})` });
+      const frame = svg(item, 'g', { transform: `rotate(${((hash(`${title}r`) - .5) * 26).toFixed(1)} ${fx.toFixed(1)} ${fy.toFixed(1)})` });
       svg(frame, 'rect', { x: (fx - w / 2).toFixed(1), y: (fy - h / 2).toFixed(1), width: w.toFixed(1), height: h.toFixed(1), rx: 1.5 });
       svg(frame, 'rect', { x: (fx - w / 2 + 2.5).toFixed(1), y: (fy - h / 2 + 2).toFixed(1), width: Math.max(1, w - 5).toFixed(1), height: Math.max(1, h - 4).toFixed(1), class: 'floe-picture' });
-      const title = film.title || 'Untitled';
-      const name = svg(item, 'text', { x: (fx + cell / 2 + 8).toFixed(1), y: (fy + 5).toFixed(1), class: 'floe-name' }, title.length > chars ? `${title.slice(0, chars - 1).trimEnd()}…` : title);
-      name.style.transitionDelay = `${(i % 14) * 55}ms`;
+      const name = svg(item, 'text', { x: (fx + cell / 2 + 8).toFixed(1), y: (fy + 5).toFixed(1), class: 'floe-name' }, label);
+      name.style.transitionDelay = `${Math.round(along(film) * 700)}ms`; // names pop in left to right, in watch order
       svg(item, 'title', {}, `${title} (${film.year})${film.rating == null ? ' · unrated' : ` · ${starMarks(film.rating)}`}${film.liked ? ' · liked' : ''}`);
     });
   });
@@ -537,6 +549,7 @@ function drawFloe(films) {
   const bubbles = svg(art, 'g', { class: 'floe-bubbles' });
   [[-.3, 0, 2.5], [-.36, -12, 1.8], [-.27, -24, 1.4]].forEach(([at, up, r]) => svg(bubbles, 'circle', { cx: (cx + last.half * at).toFixed(1), cy: (floor + up).toFixed(1), r }));
   svg(art, 'path', { d: `M0 ${floor + 22}q${width * .15} -12 ${width * .3} -2t${width * .35} 0t${width * .35} -4V${height}H0z`, class: 'floe-bed' });
+  svg(art, 'text', { x: width / 2, y: height - 9, class: 'floe-axis' }, '← watched earlier · watched lately →');
   const weed = svg(art, 'g', { class: 'floe-weed' });
   svg(weed, 'path', { d: `M${width * .06} ${floor + 22}q-5 -6 0 -12t0 -12M${width * .09} ${floor + 21}q4 -5 0 -10t0 -9` });
 
@@ -557,13 +570,20 @@ function drawFloe(films) {
   art.setAttribute('aria-label', layers.map(layer => `${layer.group.length} from ${layer.name}`).join(', '));
   if (dated.length < 3) { note.textContent = 'Too few films with release years to sound the depths.'; return; }
   const share = test => dated.filter(film => test(Math.max(0, NOW_YEAR - film.year))).length / dated.length;
-  const oldest = last.group.at(-1), span = NOW_YEAR - oldest.year;
+  const oldest = last.group.reduce((found, film) => film.year < found.year ? film : found), span = NOW_YEAR - oldest.year;
   const notes = [share(age => age <= 1) >= .5 ? 'Most of what you watch is brand new: this year’s and last year’s releases.'
     : share(age => age > 25) >= .5 ? 'Your iceberg runs deep: most of what you watch is older than a generation.'
     : share(age => age <= 5) >= .6 ? 'Most of your ice is recent, from the last few years.'
     : 'Your films spread across the decades.'];
   if (layers.length < 2) notes.push('Every film here came out the same year, so the ice is a single layer.');
   else notes.push(`Your deepest dive: ${oldest.title || 'an untitled film'}, from ${depthName(oldest.year, oldest.year)}.`);
+  const byWatch = dated.filter(film => when(film) != null).sort((a, b) => when(a) - when(b));
+  if (byWatch.length >= 6) {
+    const meanAge = list => list.reduce((sum, film) => sum + NOW_YEAR - film.year, 0) / list.length, halfway = Math.floor(byWatch.length / 2);
+    const drift = meanAge(byWatch.slice(halfway)) - meanAge(byWatch.slice(0, halfway));
+    if (drift >= 5) notes.push('Lately you have been diving deeper: your latest watches are older films.');
+    else if (drift <= -5) notes.push('Lately you have been drifting up toward new releases.');
+  }
   if (span <= 10 && layers.length > 2) notes.push('The whole iceberg fits inside a decade, so each layer is only a year or so thick.');
   else if (span > 50 && layers.length >= 6) notes.push('You have ice at nearly every depth.');
   note.textContent = notes.join(' ');
