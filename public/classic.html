@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Your recent Letterboxd films, laid out on a strip of film.">
+  <title>Stillframe</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <svg class="ink-defs" width="0" height="0" aria-hidden="true" focusable="false"><filter id="ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="8"><animate attributeName="seed" values="8;14;21" dur=".375s" calcMode="discrete" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="boil" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="3"><animate attributeName="seed" values="3;9;16" dur=".375s" calcMode="discrete" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="3.2" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="sketch" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="5"/><feDisplacementMap in="SourceGraphic" scale="2.2" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="crayon" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="3" seed="11" result="wax"/><feColorMatrix in="wax" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3.2 0 0 0 -.2" result="tooth"/><feComposite in="SourceGraphic" in2="tooth" operator="in" result="waxed"/><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="2" result="wob"/><feDisplacementMap in="waxed" in2="wob" scale="2" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="pencil" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9 .045" numOctaves="2" seed="17" result="lead"/><feColorMatrix in="lead" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.2 0 0 0 .2" result="strokes"/><feComposite in="SourceGraphic" in2="strokes" operator="in" result="laid"/><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="5" result="wob"/><feDisplacementMap in="laid" in2="wob" scale="1.6" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
+  <div class="shell">
+    <header class="masthead"><a href="/" class="wordmark">Stillframe</a><span class="masthead-note">Not affiliated with Letterboxd</span></header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Your recent films, <span class="h1-mark">at a glance.</span></h1>
+        <div class="dots" aria-hidden="true"></div>
+        <p class="lede"><em>Stillframe reads your recent Letterboxd diary</em> and lays it out on a strip of film: what you watched, when, and how you rated it. This is not your full history.</p>
+        <p class="lede-note">Nothing is saved. The page clears itself after two minutes.</p>
+        <form id="collect-form" class="collect-form">
+          <label for="username">Your Letterboxd username</label>
+          <div class="form-row"><div class="input-wrap"><input id="username" name="username" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="dave" required></div><button id="submit" type="submit" data-busy="Looking up…">Look up</button></div>
+          <p class="consent">Use your own account, or one you have permission to look at.</p>
+        </form>
+      </section>
+      <div class="filmband-wrap" aria-hidden="true"><div class="filmband"><div class="filmband-track"></div></div></div>
+      <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+      <section id="results" class="results" aria-labelledby="result-title" hidden>
+        <div class="result-heading"><div><p class="lookup-state" id="result-label">Current lookup</p><h2 id="result-title" tabindex="-1"></h2></div><button id="clear-results" class="clear-button" type="button">Clear now</button></div>
+        <div id="receipt" class="receipt">
+          <div class="strip">
+            <div class="frame film-leader">
+              <svg class="countdown" viewBox="0 0 220 124" aria-hidden="true"><circle class="wipe" cx="110" cy="62" r="25"/><circle cx="110" cy="62" r="50"/><circle cx="110" cy="62" r="40"/><path d="M0 62H220M110 0V124"/><line class="hand" x1="110" y1="62" x2="110" y2="12"/><text id="leader-count" x="110" y="80"></text></svg>
+              <p class="receipt-brand">Stillframe</p><div id="receipt-span"></div>
+            </div>
+            <section class="frame rate-frame" aria-labelledby="histogram-title"><h3 id="histogram-title">How you rate</h3><span id="histogram-count" class="sr-only"></span><div id="histogram" class="star-row"></div><div class="star-ends" aria-hidden="true"><span>★</span><span>★★★★★</span></div></section>
+            <section class="frame house-frame" aria-labelledby="weekdays-title"><h3 id="weekdays-title">Who's in the house</h3><svg id="weekdays" class="seating" role="img"></svg><p id="house-note" class="frame-note"></p></section>
+            <section class="frame barcode-frame" aria-labelledby="barcode-title"><h3 id="barcode-title">Every film, in order</h3><div id="barcode" class="barcode" role="img"></div><p class="barcode-key" aria-hidden="true"><span class="key-dark">rated higher</span><span class="key-liked">liked</span><span class="key-rewatch">rewatch</span><span class="key-review">review</span></p><p id="receipt-totals" class="habits"></p></section>
+            <section class="reel-films" aria-label="Recently watched"><span id="recent-count" class="sr-only"></span><ol id="recent-list" class="recent-list"></ol><button id="keep-rolling" class="keep-rolling" type="button" hidden>Show the rest</button></section>
+            <div class="frame receipt-foot"><div id="receipt-footer" class="receipt-small"></div><div class="fuse" aria-hidden="true"><span id="fuse"></span></div><div id="receipt-clock" class="sr-only"></div><p class="the-end">The End</p></div>
+          </div>
+        </div>
+        <section id="extras" class="extras" aria-labelledby="extras-title" hidden>
+          <h3 id="extras-title" class="extras-title">More from these films</h3>
+          <div class="extras-grid">
+            <section class="piece piece-wide rhythm" aria-labelledby="rhythm-title"><h4 id="rhythm-title">Nights at the pictures</h4><svg id="rhythm" class="rhythm-strip" role="img"></svg><p id="rhythm-note" class="frame-note"></p></section>
+            <section class="piece meter-piece" aria-labelledby="meter-title"><h4 id="meter-title">The light meter</h4><svg id="meter" class="meter" role="img"></svg><p id="meter-note" class="frame-note"></p></section>
+            <section class="piece era-piece" aria-labelledby="era-title"><h4 id="era-title">Then and now</h4><svg id="era" class="era" role="img"></svg><p id="era-note" class="frame-note"></p></section>
+            <section class="piece piece-wide hearts-piece" aria-labelledby="hearts-title"><h4 id="hearts-title">Heart and stars</h4><svg id="hearts" class="hearts" role="img"></svg><p id="hearts-note" class="frame-note"></p></section>
+          </div>
+        </section>
+        <details class="film-collection" hidden><summary><span>Watched films</span><span id="watched-count"></span></summary><p id="watched-coverage" class="section-note"></p><ol id="watched-list" class="recent-list"></ol></details>
+        <details class="film-collection" hidden><summary><span>Watchlist</span><span id="watchlist-count"></span></summary><p id="watchlist-coverage" class="section-note"></p><ol id="watchlist-list" class="recent-list"></ol></details>
+      </section>
+      <section id="empty-state" class="empty-state"><p>Your films appear here.</p></section>
+    </main>
+  </div>
+</body>
+</html>

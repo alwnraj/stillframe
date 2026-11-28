@@ -3,37 +3,67 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Read the current public Letterboxd RSS feed for this lookup.">
+  <meta name="description" content="Your recent Letterboxd films, laid out on a strip of film.">
   <title>Stillframe</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/reel.css">
   <script src="/app.js" defer></script>
 </head>
-<body>
+<body class="bake">
   <div class="shell">
-    <header class="masthead"><a href="/" class="wordmark">stillframe</a><a href="/night">Movie night</a></header>
+    <header class="masthead"><a href="/" class="wordmark">Stillframe</a><span class="masthead-note">Not affiliated with Letterboxd</span></header>
     <main>
-      <section class="intro" aria-labelledby="page-title">
-        <div class="intro-copy"><h1 id="page-title">Your Letterboxd films</h1><p class="lede">Up to 50 recent entries from your public RSS feed. This is not your full history.</p></div>
-        <form id="collect-form" class="collect-form">
-          <label for="username">Your Letterboxd username</label>
-          <div class="input-wrap"><input id="username" name="username" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. dave" required></div>
-          <p class="privacy-note">No saved lookups or application logs. Results clear after two minutes.</p>
-          <button id="submit" type="submit">Collect my films</button>
-          <p class="consent">By continuing, you confirm this is your account or you have the account owner’s permission.</p>
-        </form>
+      <section class="intro bake-hero" aria-labelledby="page-title">
+        <div class="doodles" aria-hidden="true">
+          <svg class="doodle d1" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><circle cx="38" cy="46" r="10" fill="#fff4dc"/><circle cx="82" cy="46" r="10" fill="#fff4dc"/><circle cx="52" cy="37" r="12" fill="#fff4dc"/><circle cx="68" cy="35" r="12" fill="#fff4dc"/><circle cx="60" cy="48" r="10" fill="#fff4dc"/><path d="M30 50h60l-10 60H40z" fill="#b8323f"/><path d="M47 52h9l-1 56h-6zM65 52h9l-4 56h-6z" fill="#fff4dc" stroke="none"/><path d="M30 50h60l-10 60H40z" fill="none"/></g></svg>
+          <svg class="doodle d2" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" transform="rotate(-12 60 60)"><path d="M18 40h84v12a8 8 0 0 0 0 16v12H18V68a8 8 0 0 0 0-16z" fill="#f0c869"/><path d="M40 42v36" stroke-dasharray="4 5"/><path d="M72 49l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#b8323f"/></g></svg>
+          <svg class="doodle d3" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="20" y="56" width="80" height="48" rx="4" fill="#2a1f1b"/><path d="M32 74h56M32 88h36" stroke="#fff4dc"/><g transform="rotate(-16 22 56)"><rect x="20" y="40" width="80" height="14" fill="#fff4dc"/><path d="M30 40h11l-6 14h-11zM52 40h11l-6 14h-11zM74 40h11l-6 14h-11z" fill="#2a1f1b" stroke="none"/><rect x="20" y="40" width="80" height="14" fill="none"/></g></g></svg>
+          <svg class="doodle d4" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M12 48h96v9l-7 24H70l-6-14h-8l-6 14H19l-7-24z" fill="#fff4dc"/><path d="M21 57h32l-5 17H26z" fill="#b8323f"/><path d="M67 57h32l-5 17H72z" fill="#6fb3b8"/></g></svg>
+          <svg class="doodle d5" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M60 14l12 28 30 3-23 20 7 30-26-16-26 16 7-30-23-20 30-3z" fill="#f0c869"/></g></svg>
+          <svg class="doodle d6" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M64 40l10-26h10" fill="none" stroke-width="4"/><path d="M36 44h48l-7 64H43z" fill="#b8323f"/><path d="M40 70c8-5 14 5 22 0s14 5 20 0" fill="none" stroke="#fff4dc"/><rect x="32" y="36" width="56" height="9" rx="3" fill="#fff4dc"/></g></svg>
+          <svg class="doodle d7" viewBox="0 0 120 120"><g stroke="#2a1f1b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><circle cx="36" cy="40" r="14" fill="#fff4dc"/><circle cx="64" cy="37" r="16" fill="#fff4dc"/><circle cx="36" cy="40" r="3" fill="#2a1f1b"/><circle cx="64" cy="37" r="3" fill="#2a1f1b"/><rect x="18" y="56" width="62" height="40" rx="6" fill="#b8323f"/><path d="M80 66l22-11v42l-22-11z" fill="#fff4dc"/></g></svg>
+        </div>
+        <div class="bake-center">
+        <div class="reel-pop" aria-hidden="true"><svg class="reel" viewBox="0 0 340 260"><g class="reel-back"><circle cx="137" cy="121" r="96" fill="#6f747c"/><circle cx="137" cy="121" r="96" fill="none" stroke="#4d525a" stroke-width="2"/></g><g class="reel-strip"><path d="M116 188C178 212 206 168 250 182S304 232 330 220" fill="none" stroke="#140d0a" stroke-width="32"/><path d="M116 188C178 212 206 168 250 182S304 232 330 220" fill="none" stroke="#efe2c6" stroke-width="27" stroke-dasharray="3.5 5"/><path d="M116 188C178 212 206 168 250 182S304 232 330 220" fill="none" stroke="#1d1410" stroke-width="18"/><path d="M116 188C178 212 206 168 250 182S304 232 330 220" fill="none" stroke="#7a5233" stroke-width="13" stroke-dasharray="15 4"/><path d="M116 188C178 212 206 168 250 182S304 232 330 220" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.5" transform="translate(0 -9)"/></g></svg><svg class="reel-front" viewBox="0 0 340 260"><defs><radialGradient id="metal" cx="38%" cy="32%" r="78%"><stop offset="0" stop-color="#fbfbfc"/><stop offset=".45" stop-color="#d5d8dc"/><stop offset=".8" stop-color="#a7acb3"/><stop offset="1" stop-color="#868b93"/></radialGradient><linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".0"/><stop offset=".35" stop-color="#fff" stop-opacity=".55"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#fff" stop-opacity=".25"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="bevel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4d525a"/><stop offset="1" stop-color="#ffffff"/></linearGradient><radialGradient id="pack" cx="50%" cy="50%" r="50%"><stop offset=".3" stop-color="#5a3b28"/><stop offset=".75" stop-color="#2c1c14"/><stop offset="1" stop-color="#160e0a"/></radialGradient><radialGradient id="hub" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#b9bdc3"/><stop offset="1" stop-color="#6e737b"/></radialGradient><mask id="cutouts" maskUnits="userSpaceOnUse" x="0" y="0" width="340" height="260"><rect width="340" height="260" fill="#fff"/><circle cx="130" cy="60" r="25" fill="#000"/><circle cx="179.45" cy="95.93" r="25" fill="#000"/><circle cx="160.56" cy="154.07" r="25" fill="#000"/><circle cx="99.44" cy="154.07" r="25" fill="#000"/><circle cx="80.55" cy="95.93" r="25" fill="#000"/></mask></defs><g><circle cx="130" cy="112" r="80" fill="url(#pack)"/><circle cx="130" cy="112" r="34" fill="none" stroke="#6b4a33" stroke-opacity=".5" stroke-width=".8"/><circle cx="130" cy="112" r="44" fill="none" stroke="#6b4a33" stroke-opacity=".5" stroke-width=".8"/><circle cx="130" cy="112" r="54" fill="none" stroke="#6b4a33" stroke-opacity=".5" stroke-width=".8"/><circle cx="130" cy="112" r="64" fill="none" stroke="#6b4a33" stroke-opacity=".5" stroke-width=".8"/><circle cx="130" cy="112" r="72" fill="none" stroke="#6b4a33" stroke-opacity=".5" stroke-width=".8"/><g mask="url(#cutouts)"><circle cx="130" cy="112" r="96" fill="url(#metal)"/><circle cx="130" cy="112" r="46" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1"/><circle cx="130" cy="112" r="62" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1"/><circle cx="130" cy="112" r="78" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1"/><circle cx="130" cy="112" r="88" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1"/><circle cx="130" cy="112" r="96" fill="url(#sheen)"/></g><circle cx="130" cy="60" r="25" fill="none" stroke="url(#bevel)" stroke-width="2.5"/><circle cx="179.45" cy="95.93" r="25" fill="none" stroke="url(#bevel)" stroke-width="2.5"/><circle cx="160.56" cy="154.07" r="25" fill="none" stroke="url(#bevel)" stroke-width="2.5"/><circle cx="99.44" cy="154.07" r="25" fill="none" stroke="url(#bevel)" stroke-width="2.5"/><circle cx="80.55" cy="95.93" r="25" fill="none" stroke="url(#bevel)" stroke-width="2.5"/><circle cx="130" cy="112" r="95" fill="none" stroke="#5f646c" stroke-width="2.5"/><circle cx="130" cy="112" r="91.5" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/><circle cx="130" cy="112" r="21" fill="url(#hub)" stroke="#5f646c" stroke-width="1.5"/><circle cx="130" cy="112" r="7.5" fill="#2a2d31"/><path d="M128.5 103h3v4h-3zM137 113.5v-3h4v3zM119 113.5v-3h4v3z" fill="#2a2d31"/></g></svg><svg class="reel-glint" viewBox="0 0 340 260"><defs><filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter></defs><ellipse class="reel-glint" cx="96" cy="64" rx="44" ry="16" transform="rotate(-32 96 64)" fill="#fff" fill-opacity=".45" filter="url(#soft)"/></svg></div>
+          <h1 id="page-title">Your recent films, <span class="h1-mark">at a glance.</span></h1>
+          <p class="date-line">Nothing is saved · Clears in two minutes</p>
+          <p class="lede">Stillframe reads your recent Letterboxd diary and lays it out on a strip of film. This is not your full history.</p>
+          <form id="collect-form" class="collect-form">
+            <label for="username">Your Letterboxd username</label>
+            <div class="form-row"><div class="input-wrap"><input id="username" name="username" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="dave" required></div><button id="submit" type="submit" data-busy="Looking up…">Look up</button></div>
+            <p class="consent">Use your own account, or one you have permission to look at.</p>
+          </form>
+  
+        </div>
       </section>
       <div id="status" class="status" role="status" aria-live="polite" hidden></div>
       <section id="results" class="results" aria-labelledby="result-title" hidden>
-        <div class="result-heading"><div><p class="lookup-state" id="result-label">Current lookup</p><h2 id="result-title"></h2></div><button id="clear-results" class="clear-button" type="button">Clear now</button></div>
-        <section aria-labelledby="histogram-title"><div class="section-heading"><h3 id="histogram-title">Recent ratings</h3><span id="histogram-count"></span></div><p class="section-note">Ratings in the current RSS sample only.</p><div id="histogram" class="histogram"></div></section>
-        <section aria-labelledby="recent-title"><div class="section-heading"><h3 id="recent-title">Recently watched</h3><span id="recent-count"></span></div><p class="section-note">RSS feed order, including rewatches. This is not your full history.</p><ol id="recent-list" class="recent-list"></ol></section>
+        <div class="result-heading"><div><p class="lookup-state" id="result-label">Current lookup</p><h2 id="result-title" tabindex="-1"></h2></div><button id="clear-results" class="clear-button" type="button">Clear now</button></div>
+        <div id="receipt" class="receipt">
+          <div class="strip">
+            <div class="frame film-leader">
+              <svg class="countdown" viewBox="0 0 220 124" aria-hidden="true"><circle class="wipe" cx="110" cy="62" r="25"/><circle cx="110" cy="62" r="50"/><circle cx="110" cy="62" r="40"/><path d="M0 62H220M110 0V124"/><line class="hand" x1="110" y1="62" x2="110" y2="12"/><text id="leader-count" x="110" y="80"></text></svg>
+              <p class="receipt-brand">Stillframe</p><span id="recent-count" class="sr-only"></span><div id="receipt-span"></div>
+            </div>
+            <section class="frame house-frame" aria-labelledby="weekdays-title"><h3 id="weekdays-title">Who's in the house</h3><svg id="weekdays" class="seating" role="img"></svg><p id="house-note" class="frame-note"></p></section>
+            <div class="frame receipt-foot"><div id="receipt-footer" class="receipt-small"></div><div class="fuse" aria-hidden="true"><span id="fuse"></span></div><div id="receipt-clock" class="sr-only"></div><p class="the-end">The End</p></div>
+          </div>
+        </div>
+        <section id="extras" class="extras" aria-labelledby="extras-title" hidden>
+          <h3 id="extras-title" class="extras-title">More from these films</h3>
+          <div class="extras-grid">
+            <section class="piece piece-wide rhythm" aria-labelledby="rhythm-title"><h4 id="rhythm-title">Nights at the pictures</h4><svg id="rhythm" class="rhythm-strip" role="img"></svg><p id="rhythm-note" class="frame-note"></p></section>
+            <section class="piece meter-piece" aria-labelledby="meter-title"><h4 id="meter-title">The light meter</h4><svg id="meter" class="meter" role="img"></svg><p id="meter-note" class="frame-note"></p></section>
+            <section class="piece era-piece" aria-labelledby="era-title"><h4 id="era-title">Then and now</h4><svg id="era" class="era" role="img"></svg><p id="era-note" class="frame-note"></p></section>
+            <section class="piece piece-wide hearts-piece" aria-labelledby="hearts-title"><h4 id="hearts-title">Heart and stars</h4><svg id="hearts" class="hearts" role="img"></svg><p id="hearts-note" class="frame-note"></p></section>
+          </div>
+        </section>
         <details class="film-collection" hidden><summary><span>Watched films</span><span id="watched-count"></span></summary><p id="watched-coverage" class="section-note"></p><ol id="watched-list" class="recent-list"></ol></details>
         <details class="film-collection" hidden><summary><span>Watchlist</span><span id="watchlist-count"></span></summary><p id="watchlist-coverage" class="section-note"></p><ol id="watchlist-list" class="recent-list"></ol></details>
       </section>
-      <section id="empty-state" class="empty-state"><p>No films collected.</p></section>
+      <section id="empty-state" class="empty-state"><p>Your films appear here.</p></section>
     </main>
-    <footer>Not affiliated with Letterboxd.</footer>
   </div>
 </body>
 </html>

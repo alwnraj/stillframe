@@ -15,7 +15,7 @@ try {
   await page.goto(base);
   await page.getByLabel('Your Letterboxd username', { exact: true }).fill(username);
   const pending = page.waitForResponse(response => response.url().endsWith('/api/collect') && response.request().method() === 'POST', { timeout: 180000 });
-  await page.getByRole('button', { name: 'Collect my films', exact: true }).click();
+  await page.getByRole('button', { name: 'Look up', exact: true }).click();
   const response = await pending;
   assert.ok(response.status() === 200 && response.headers()['cache-control'] === 'no-store');
   const result = await response.json();
@@ -58,7 +58,10 @@ try {
   assert.ok(!('favorites' in result) && !('likedFilms' in result) && !('ratingHistogram' in result));
   assert.ok(!('id' in result) && !('downloadUrl' in result) && !('filename' in result));
   await page.locator('#results').waitFor({ state: 'visible' });
-  assert.ok(await page.locator('#recent-list .recent').count() === result.recent.length);
+  // The main page shows no film list: each dated entry takes one seat, and each rated title one film can.
+  const dated = result.recent.filter(row => !Number.isNaN(new Date(`${row.watchedDate}T00:00:00Z`).getTime())).length;
+  assert.ok(await page.locator('#weekdays .seat.taken').count() === dated);
+  if (dated) assert.ok((await page.locator('#rhythm-note').textContent()).length > 0 && (await page.locator('#meter-note').textContent()).length > 0);
   assert.ok(await page.locator('#result-label').innerText() === (result.complete ? 'Current lookup' : 'Incomplete lookup'));
   assert.equal(await page.locator('#status').getAttribute('class'), result.complete ? 'status' : 'status error');
   for (const [section, selector] of [['recent', '#recent-count'], ['watchedFilms', '#watched-count'], ['watchlist', '#watchlist-count']]) {
@@ -84,7 +87,7 @@ try {
   assert.ok(removedDownload.status() === 404); await removedDownload.dispose();
   await page.getByRole('button', { name: 'Clear now', exact: true }).click();
   assert.ok(await page.locator('#results').isHidden());
-  assert.ok(await page.locator('.recent, .favorite, .histogram-row, .film-row').count() === 0);
+  assert.ok(await page.locator('.recent, .favorite, .histogram-row, .film-row, .seat, .scale-can, .heart-mark, .plain-mark, .rhythm-frame').count() === 0);
   assert.ok(await page.locator('#username').inputValue() === '');
   assert.ok(!browserError);
 } catch {

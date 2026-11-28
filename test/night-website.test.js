@@ -1,6 +1,7 @@
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {createApp} from '../src/server.js';
+import {ASSETS,HIDDEN_ASSETS} from '../src/app.js';
 import {launchOwnedBrowser} from '../src/snapshot.js';
 let browser;
 before(async()=>{browser=await launchOwnedBrowser();});
@@ -8,7 +9,7 @@ after(async()=>{await browser?.close();});
 const film=(user,id,title)=>({tmdbId:String(id),title,year:2020,entryUrl:`https://letterboxd.com/${user}/film/example-${id}/`,rating:4.5,liked:true,rewatch:false,watchedDate:'2020-01-01'});
 const collect=async user=>({complete:true,recent:[film(user,1,'Shared example'),film(user,user==='alice'?2:3,user==='alice'?'Alice example':'Bob example')],checks:{}});
 async function withServer(run,options={}) {
- const server=createApp({collect,...options});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const server=createApp({collect,assets:{...ASSETS,...HIDDEN_ASSETS},...options});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  try{await run(`http://127.0.0.1:${server.address().port}`);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 }
 async function enter(page,base,user,fragment='') {

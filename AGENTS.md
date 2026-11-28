@@ -39,7 +39,7 @@ Stillframe is a username-only Letterboxd website using Node.js 22+, ES modules, 
 | `src/app.js` | Platform-neutral `Request → Response` handler: routes, guards, busy lock and room endpoints |
 | `src/server.js` | Thin silent Node adapter for local use and tests |
 | `worker/index.js`, `wrangler.toml` | Cloudflare Worker: static assets with headers, one in-memory Durable Object for all `/api` state; no storage, alarms or observability |
-| `public/` | Form, transient results, histogram, collection panels and clearing |
+| `public/` | Main page (`index.html` with `style.css` and `reel.css`): poster hero, a strip with the leader, seating chart and fuse, the habit pieces, and clearing. The former red page (`classic.html`, full strip with barcode, rating stars and film cards), the iceberg and movie-night pages are kept but unrouted (`HIDDEN_ASSETS` in `src/app.js`, used only by tests) |
 | `src/scraper.js` | Shared username validation and read-only full-history test helpers; no persistence |
 | `test/`, `scripts/test-live.mjs` | Synthetic regression tests and a non-recording live browser check |
 
@@ -76,7 +76,7 @@ For live collection/UI changes, run sequentially with the server running:
 ```sh
 node scripts/test-live.mjs dave
 node scripts/test-live.mjs davidehrlich
-node scripts/test-night-live.mjs dave davidehrlich
+node scripts/test-night-live.mjs dave davidehrlich   # only while /night is routed
 ```
 
 The live script produces no data output or artifacts; check its exit status. Account-specific counts and provider access can change. Use fixture tests to diagnose errors without recording live data. Verify the RSS-only production scope and separate extended regressions, RSS sample histogram, pacing/order and stop-on-block behavior, coverage, cancellation, clearing, expiry, browser storage absence, removed download endpoints, browser errors and mobile layouts.

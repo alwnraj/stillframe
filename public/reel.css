@@ -1,0 +1,195 @@
+/* The reel page: a flat, hand-drawn bake-sale poster look on cream (chunky italic headline,
+   drifting doodles, oval buttons with hard ink shadows). It layers over style.css, so the results strip and pieces stay the same. */
+body.bake{--paper:#fbefdc;--ink:#2a1f1b;--muted:#6b5a50;--line:rgba(42,31,27,.18);--red:#8f1d2c;--rose:#ecb7bd;--gold:#f0c869;background:var(--paper);background-image:none;color:var(--ink)}
+body.bake:before,body.bake:after{display:none}
+.bake .masthead{background:none;border-bottom:2px solid var(--ink)}
+.bake .wordmark,.bake .masthead-note{color:var(--ink)}
+.bake .wordmark{filter:none}
+
+.bake-hero{position:relative;display:block;width:100vw;margin-left:calc(50% - 50vw);padding:36px 20px 90px;min-height:calc(100svh - 90px);overflow:hidden;text-align:center}
+.bake-center{position:relative;z-index:1;max-width:620px;margin:0 auto}
+.bake h1{filter:none;text-shadow:none;color:var(--ink);font:italic 700 clamp(2.9rem,7vw,5.2rem)/.98 Georgia,'Times New Roman',serif;letter-spacing:-.035em;-webkit-text-stroke:.035em currentColor;margin:6px 0 0}
+.bake .h1-mark{display:block;background:none;padding:0;color:var(--red)}
+.date-line{font:700 .74rem/1.4 'Avenir Next','Segoe UI',sans-serif;letter-spacing:.14em;text-transform:uppercase;margin:24px 0 0}
+.bake .lede{color:var(--muted);font-size:1.02rem;line-height:1.6;max-width:470px;margin:14px auto 0}
+
+.bake .collect-form{background:none;border:0;padding:0;max-width:520px;margin:26px auto 0;text-align:left}
+.bake .collect-form label{font:700 .72rem 'Avenir Next','Segoe UI',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);text-align:center}
+.bake .form-row{display:flex;gap:12px;align-items:center}
+.bake .input-wrap{flex:1;border:2px solid var(--ink);border-radius:999px;background:#fffaf0;padding:0 20px}
+.bake input{color:var(--ink)}.bake input::placeholder{color:#a08f80}
+.bake #submit,.bake .clear-button{filter:none;background:var(--rose);background-image:none;color:var(--ink);border:2px solid var(--ink);border-radius:50%;padding:18px 26px;min-height:62px;font:700 .78rem 'Avenir Next','Segoe UI',sans-serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:3px 5px 0 var(--ink);transition:translate .15s,box-shadow .15s;animation:none}
+.bake #submit:hover:not(:disabled),.bake .clear-button:hover{filter:none;animation:none;background:var(--rose);translate:0 -3px;box-shadow:4px 7px 0 var(--ink)}
+.bake #submit:disabled{background:#e4cfc4}
+.bake .showtime #submit,.showtime.bake #submit{filter:none}
+.bake .consent{color:var(--muted);text-align:center}
+.bake .clear-button{background:#fffaf0}
+.bake .status{background:#fff6e6;border:2px solid var(--ink);color:var(--ink);border-radius:18px}
+.bake .results,.bake .empty-state{background:none;border-top:2px solid var(--ink)}
+.bake .empty-state p{filter:none}
+.bake .extras-title,.bake .result-heading h2{color:var(--ink)}
+.bake .piece{box-shadow:4px 6px 0 var(--ink)}
+
+/* Drifting doodles, after the reference's floating pastries. */
+.doodles{position:absolute;inset:0;pointer-events:none}
+.doodle{position:absolute;width:clamp(78px,10vw,140px);height:auto}
+.d1{top:7%;left:5%}.d2{top:40%;left:17%;width:clamp(60px,7vw,96px)}.d3{top:9%;right:6%}.d4{bottom:20%;left:9%}.d5{bottom:7%;right:8%}.d6{bottom:6%;left:3%}.d7{top:44%;right:4%}
+
+/* The film reel: it pops out of the page like a sticker, spins, and unspools a strip. */
+.reel-pop{position:relative;width:min(300px,72vw);margin:0 auto}
+.reel-pop:before{content:"";position:absolute;left:-2%;top:-10%;width:76%;aspect-ratio:1;border-radius:50%;background:repeating-conic-gradient(var(--gold) 0 10deg,transparent 10deg 20deg);opacity:.55;z-index:-1}
+.reel{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(5px 7px 0 var(--ink))}
+.reel-front,.reel-glint{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+/* The front flange spins as one composited layer around the reel's hub, so it is painted once, not every frame. */
+.reel-front{transform-origin:38.235% 43.077%}
+
+.bake .shell{padding-bottom:60px}
+
+@media(prefers-reduced-motion:no-preference){
+.doodle{animation:drift 4.5s linear infinite}
+.d2{animation-duration:5.2s}.d3{animation-duration:5.8s}.d4{animation-duration:4.8s}.d5{animation-duration:5.4s}.d6{animation-duration:6s}.d7{animation-duration:4.3s;animation-direction:reverse}
+@keyframes drift{0%,100%{translate:0 -12px;rotate:-10deg}25%{translate:18px 0;rotate:0deg}50%{translate:0 12px;rotate:10deg}75%{translate:-18px 0;rotate:0deg}}
+.reel-pop{animation:reelpop .9s .15s cubic-bezier(.3,1.7,.5,1) backwards}
+@keyframes reelpop{from{opacity:0;scale:.15;rotate:-35deg}}
+.reel-pop:before{animation:burst 1s .35s cubic-bezier(.2,1.5,.4,1) backwards,rays 40s linear infinite}
+@keyframes burst{from{scale:0;opacity:0}}
+@keyframes rays{to{rotate:360deg}}
+.reel-front{animation:reelspin 7s linear infinite}
+@keyframes reelspin{to{rotate:360deg}}
+.reel-strip{animation:unspool 1.2s .8s cubic-bezier(.4,0,.2,1) backwards}
+@keyframes unspool{from{clip-path:inset(0 100% 0 0)}}
+.bake h1,.date-line,.bake .lede,.bake .collect-form{animation:rise .7s cubic-bezier(.2,.8,.2,1) backwards}
+.bake h1{animation-delay:.5s}.date-line{animation-delay:.6s}.bake .lede{animation-delay:.68s}.bake .collect-form{animation-delay:.76s}
+}
+
+@media(max-width:700px){
+.bake-hero{padding:24px 18px 70px;min-height:0}
+.doodle{width:64px}.d2,.d4,.d7{display:none}.d1{top:2%;left:2%}.d3{top:3%;right:2%}.d5{bottom:2%;right:3%}.d6{bottom:2%;left:2%}
+.bake .form-row{flex-direction:column;align-items:stretch}
+.bake .input-wrap{border-radius:999px}
+.bake #submit{border-radius:999px;min-height:54px}
+}
+
+/* The strip on this page: a real piece of 35mm film lifted off the poster. Solid film base with a
+   celluloid sheen, sprocket holes you can see the page through, flat cream frames, a hard red
+   sticker shadow and soft depth shadows. It lifts off the page when it arrives. */
+.bake .receipt{perspective:1600px}
+.bake .strip{clip-path:none;border-radius:14px;rotate:-1.2deg;background:linear-gradient(104deg,transparent 28%,rgba(255,240,220,.08) 40%,transparent 52%),linear-gradient(90deg,#1c1411,#2a1f1b 8%,#35271f 50%,#2a1f1b 92%,#1c1411);box-shadow:inset 0 1px 0 rgba(255,240,220,.12),inset 0 -2px 0 rgba(0,0,0,.35),10px 12px 0 var(--red),0 26px 36px -12px rgba(42,31,27,.5),0 60px 90px -30px rgba(42,31,27,.4);transition:translate .25s,box-shadow .25s}
+.bake .strip:hover{translate:0 -4px;box-shadow:inset 0 1px 0 rgba(255,240,220,.12),inset 0 -2px 0 rgba(0,0,0,.35),12px 16px 0 var(--red),0 34px 44px -12px rgba(42,31,27,.5),0 70px 100px -30px rgba(42,31,27,.4)}
+.bake .strip:before,.bake .strip:after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='24'%3E%3Crect x='3' y='5' width='9' height='13' rx='2.6' fill='%23fbefdc'/%3E%3C/svg%3E") repeat-y}
+.bake .frame,.bake .receipt .recent{background:#fffaf0;background-image:none;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(42,31,27,.08),0 3px 0 rgba(0,0,0,.35)}
+.bake .strip *{filter:none}
+.bake .receipt .recent:hover{translate:0 -3px;box-shadow:inset 0 0 0 1px rgba(42,31,27,.08),4px 5px 0 var(--gold)}
+.bake .keep-rolling{border:2px solid var(--gold);border-radius:999px;color:var(--gold)}
+@media(max-width:520px){.bake .strip{rotate:-.6deg;box-shadow:inset 0 1px 0 rgba(255,240,220,.12),6px 8px 0 var(--red),0 22px 30px -12px rgba(42,31,27,.5)}}
+@media(prefers-reduced-motion:no-preference){
+.bake .strip{animation:liftoff 1.1s cubic-bezier(.2,.9,.3,1.1) backwards}
+@keyframes liftoff{0%{opacity:0;transform:translateY(90px) rotateX(38deg) scale(.92);box-shadow:0 0 0 var(--red),0 0 0 rgba(42,31,27,0)}55%{opacity:1;transform:translateY(-12px) rotateX(-5deg) scale(1.02)}100%{transform:none}}
+}
+@media(prefers-reduced-motion:reduce){.bake .strip,.bake .receipt .recent{transition:none}.bake .strip:hover,.bake .receipt .recent:hover{translate:none}}
+.bake .rhythm,.bake .meter-piece,.bake .hearts-piece,.bake .era-piece{border:2px solid var(--ink);background-image:none;background-color:#fffaf0}
+.bake .rhythm-strip,.bake .meter,.bake .hearts,.bake .era{filter:none}
+
+/* Motion, this page only: everything that is not clickable sways, bobs, beats or flickers. Links, buttons and the
+   strip itself stay put so they are easy to hit. All of it stops under reduced motion. */
+@media(prefers-reduced-motion:no-preference){
+/* The poster */
+.bake h1{animation:rise .7s .5s cubic-bezier(.2,.8,.2,1) backwards,sway 5s 1.2s ease-in-out infinite}
+@keyframes sway{0%,100%{rotate:-1.2deg}50%{rotate:1.2deg}}
+.bake .h1-mark{transform-origin:50% 80%;animation:jiggle 2.6s 1.4s ease-in-out infinite}
+@keyframes jiggle{0%,60%,100%{scale:1;rotate:0deg}15%{scale:1.05 .95;rotate:-2deg}30%{scale:.97 1.04;rotate:1.5deg}45%{scale:1.02 .99;rotate:-.5deg}}
+.date-line{animation:rise .7s .6s cubic-bezier(.2,.8,.2,1) backwards,breathe 4s 1.4s ease-in-out infinite}
+@keyframes breathe{50%{scale:1.05 1}}
+.doodle{animation:drift 4.5s linear infinite,hop 1.6s ease-in-out infinite}
+.d2{animation-duration:5.2s,1.3s}.d3{animation-duration:5.8s,1.9s}.d4{animation-duration:4.8s,1.5s}.d5{animation-duration:5.4s,1.1s}.d6{animation-duration:6s,1.7s}.d7{animation-duration:4.3s,1.4s;animation-direction:reverse,normal}
+@keyframes hop{0%,100%{scale:1}50%{scale:1.14}}
+.reel,.reel-glint{animation:bob 3s ease-in-out infinite}
+.reel-front{animation:reelspin 3.5s linear infinite,bob 3s ease-in-out infinite}
+@keyframes bob{50%{translate:0 -9px}}
+.reel-pop:before{animation:burst 1s .35s cubic-bezier(.2,1.5,.4,1) backwards,rays 20s linear infinite,glow 2.4s 1.4s ease-in-out infinite}
+@keyframes glow{50%{opacity:.95}}
+
+/* Inside the strip (no links touched) */
+/* The whole leader dial twirls as one composited layer; animating the SVG star itself re-lays out its text every frame. */
+.bake .countdown{animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{50%{scale:1.08;rotate:10deg}}
+.bake .code-bar{transform-origin:bottom;animation:eq 1.8s ease-in-out infinite}
+.bake .code-bar:nth-child(2n){animation-delay:-.4s}.bake .code-bar:nth-child(3n){animation-delay:-.9s}.bake .code-bar:nth-child(5n){animation-delay:-1.3s}.bake .code-bar:nth-child(7n){animation-duration:1.3s}
+@keyframes eq{50%{scale:1 .8}}
+.bake .histogram-row{animation:wave 2.2s ease-in-out infinite}
+.bake .histogram-row:nth-child(2){animation-delay:-.2s}.bake .histogram-row:nth-child(3){animation-delay:-.4s}.bake .histogram-row:nth-child(4){animation-delay:-.6s}.bake .histogram-row:nth-child(5){animation-delay:-.8s}.bake .histogram-row:nth-child(6){animation-delay:-1s}.bake .histogram-row:nth-child(7){animation-delay:-1.2s}.bake .histogram-row:nth-child(8){animation-delay:-1.4s}.bake .histogram-row:nth-child(9){animation-delay:-1.6s}.bake .histogram-row:nth-child(10){animation-delay:-1.8s}
+@keyframes wave{50%{translate:0 -7px;rotate:10deg}}
+/* One seat in three fidgets: fewer animated SVG elements means less style work each frame. */
+.bake .seat.taken:nth-child(3n){transform-box:fill-box;transform-origin:center bottom;animation:fidget 2.8s ease-in-out infinite}
+.bake .seat.taken:nth-child(6n){animation-delay:-1.4s}.bake .seat.taken:nth-child(9n){animation-duration:2.1s}
+@keyframes fidget{0%,100%{translate:0 0;rotate:0deg}30%{translate:0 -2px;rotate:-4deg}60%{translate:.6px 0;rotate:3deg}}
+#fuse{animation:fizz .3s steps(2) infinite}
+@keyframes fizz{50%{opacity:.72}}
+.bake .the-end{animation:rise 1s 1.6s backwards,sway 3s 2.6s ease-in-out infinite}
+
+/* The pieces below */
+.bake .extras-title{display:inline-block;transform-origin:left;animation:sway 4s ease-in-out infinite}
+.bake .rhythm,.bake .meter-piece,.bake .era-piece,.bake .hearts-piece{animation:floaty 6s ease-in-out infinite}
+.bake .meter-piece{animation-delay:-1.5s}.bake .era-piece{animation-delay:-3s}.bake .hearts-piece{animation-delay:-4.5s}
+@keyframes floaty{0%,100%{translate:0 0;rotate:-.5deg}50%{translate:0 -7px;rotate:.5deg}}
+.bake .meter-needle{transform-box:view-box;transform-origin:120px 124px;animation:needle 1.4s .3s cubic-bezier(.3,1.6,.5,1) backwards,quiver .7s 1.7s ease-in-out infinite alternate}
+@keyframes needle{from{rotate:-150deg}}
+@keyframes quiver{from{rotate:-2deg}to{rotate:2deg}}
+.bake .meter-band{animation:band 2s ease-in-out infinite}
+@keyframes band{50%{stroke:#f7d88d}}
+.bake .scale-arm{transform-box:view-box;transform-origin:150px 60px;animation:rock 3.2s ease-in-out infinite}
+@keyframes rock{0%,100%{rotate:-1.8deg}50%{rotate:1.8deg}}
+.bake .scale-pivot{animation:band 2s ease-in-out infinite}
+.bake .scale-can{transform-box:fill-box;animation:drop .6s .4s cubic-bezier(.3,1.5,.5,1) backwards}
+.bake .scale-can:nth-of-type(2n){animation-delay:.5s}.bake .scale-can:nth-of-type(3n){animation-delay:.62s}.bake .scale-can:nth-of-type(5n){animation-delay:.75s}
+@keyframes drop{from{translate:0 -40px;opacity:0}}
+.bake .heart-mark,.bake .hearts-lane.liked{transform-box:fill-box;transform-origin:center;animation:beat 1.1s ease-in-out infinite}
+@keyframes beat{0%,60%,100%{scale:1}15%{scale:1.35}30%{scale:1}45%{scale:1.2}}
+.bake .plain-mark{animation:roll 3s ease-in-out infinite}.bake .plain-mark:nth-of-type(2n){animation-delay:-1s}
+@keyframes roll{50%{translate:2px -2px}}
+}
+
+/* More motion: doodles and the reel follow the pointer at different depths, the strip's sprocket holes run like
+   film through a gate, the pieces swoop in as you scroll to them, and everything swings a little harder. */
+@media(prefers-reduced-motion:no-preference){
+.doodle,.reel-pop{--depth:.04;transform:translate(calc((var(--mx,50vw) - 50vw) * var(--depth) * -1),calc((var(--my,50vh) - 50vh) * var(--depth) * -1));transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.d1,.d5{--depth:.07}.d2,.d6{--depth:.025}.d3,.d7{--depth:.055}.reel-pop{--depth:-.02}
+@keyframes drift{0%,100%{translate:0 -18px;rotate:-14deg}25%{translate:26px 0;rotate:4deg}50%{translate:0 18px;rotate:14deg}75%{translate:-26px 0;rotate:-4deg}}
+@keyframes sway{0%,100%{rotate:-2deg}50%{rotate:2deg}}
+@keyframes hop{0%,100%{scale:1}40%{scale:1.2}55%{scale:.94}}
+.bake .strip{overflow:hidden}
+.bake .strip:before,.bake .strip:after{top:-24px;animation:sprockets 1.1s linear infinite;will-change:transform}
+.bake .strip:after{animation-direction:reverse}
+@keyframes sprockets{to{translate:0 24px}}
+.bake .rhythm-frame:not(.lit-0){transform-box:fill-box;transform-origin:center}
+/* One animation per frame: projector flicker and a thump in a single keyframe set. */
+/* The calendar flickers as one composited layer; only the gold double-bill days also thump. */
+.bake .rhythm-strip{animation:flicker 3s steps(1) infinite}
+@keyframes flicker{0%,100%{opacity:1}46%{opacity:.82}50%{opacity:1}83%{opacity:.9}86%{opacity:1}}
+.bake .rhythm-frame.lit-2,.bake .rhythm-frame.lit-3{animation:projector 1.6s ease-in-out infinite}
+.bake .rhythm-frame:nth-of-type(3n){animation-delay:-.7s}
+@keyframes projector{0%,100%{opacity:1;scale:1}40%{opacity:.6}48%{opacity:1}50%{scale:.86}80%{opacity:.78}86%{opacity:1}}
+@keyframes quiver{from{rotate:-4deg}to{rotate:4deg}}
+@keyframes rock{0%,100%{rotate:-3.2deg}50%{rotate:3.2deg}}
+.bake .scale-can{animation:drop .6s .4s cubic-bezier(.3,1.5,.5,1) backwards}
+/* One animation per heart: two beats and a float in a single keyframe set. */
+.bake .heart-mark{animation:heartbeat 2.2s ease-in-out infinite}
+.bake .heart-mark:nth-of-type(2n){animation-delay:-.6s}.bake .heart-mark:nth-of-type(3n){animation-delay:-1.3s}
+@keyframes heartbeat{0%,100%{scale:1;translate:0 0}8%{scale:1.35}16%{scale:1}24%{scale:1.2}32%{scale:1}50%{translate:0 -4px}}
+@keyframes roll{50%{translate:3px -3px}}
+.bake .meter-band{animation:band 1.4s ease-in-out infinite}
+@supports (animation-timeline:view()){
+.bake .rhythm,.bake .meter-piece,.bake .era-piece,.bake .hearts-piece{animation:floaty 6s ease-in-out infinite,swoop linear both;animation-timeline:auto,view();animation-range:normal,entry 0% entry 95%}
+.bake .meter-piece{animation-delay:-1.5s,0s}.bake .era-piece{animation-delay:-3s,0s}.bake .hearts-piece{animation-delay:-4.5s,0s}
+.bake .meter-piece,.bake .hearts-piece{--spin:7deg}
+@keyframes swoop{from{opacity:0;transform:translateY(90px) rotate(var(--spin,-7deg)) scale(.8)}}
+}
+}
+
+/* This page's strip keeps only the leader, the seating chart and the fuse. */
+.bake .strip{grid-template-areas:"leader house house" "foot foot foot"}
+@media(max-width:700px){.bake .strip{grid-template-areas:"leader leader" "house house" "foot foot"}}
+@media(max-width:520px){.bake .strip{grid-template-areas:"leader leader" "house house" "foot foot"}}
+
+/* Off-screen skipping: each piece below skips rendering, and its animations, while out of view. */
+.bake .extras-grid>.piece{content-visibility:auto;contain-intrinsic-size:auto 360px}

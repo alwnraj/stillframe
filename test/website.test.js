@@ -6,6 +6,7 @@ import { EventEmitter } from 'node:events';
 import { spawn } from 'node:child_process';
 import { collectEphemeralSnapshot, launchOwnedBrowser, parseRss } from '../src/snapshot.js';
 import { createApp } from '../src/server.js';
+import { ASSETS, HIDDEN_ASSETS } from '../src/app.js';
 
 async function assertNoRetainedFiles() {
   for (const name of ['output', '.browser-profile']) await assert.rejects(access(new URL('../' + name, import.meta.url)), { code: 'ENOENT' });
@@ -76,9 +77,10 @@ function fakeFetch(mode, requests = []) {
 }
 const noBrowser = async () => { throw new Error('RSS mode must not start a browser.'); };
 
-async function withApp(mode, run, collectionMode = 'extended') {
+// The red page that covers the full strip now lives at the hidden /classic route; tests serve it alongside the main page.
+async function withApp(mode, run, collectionMode = 'extended', assets = { ...ASSETS, ...HIDDEN_ASSETS }) {
   let activeCollection;
-  const server = createApp({ collect: (username, options) => { const current = typeof mode === 'function' ? mode() : mode; activeCollection = collectEphemeralSnapshot(username, { ...options, mode: collectionMode, waitForRequest: async () => {}, launchBrowser: collectionMode === 'rss' ? noBrowser : () => launchFixtureBrowser(current), fetch: fakeFetch(current) }); return activeCollection; } });
+  const server = createApp({ assets, collect: (username, options) => { const current = typeof mode === 'function' ? mode() : mode; activeCollection = collectEphemeralSnapshot(username, { ...options, mode: collectionMode, waitForRequest: async () => {}, launchBrowser: collectionMode === 'rss' ? noBrowser : () => launchFixtureBrowser(current), fetch: fakeFetch(current) }); return activeCollection; } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try { await run({ base }); }
@@ -89,10 +91,10 @@ test('website renders an ephemeral lookup without saving or download controls', 
   await withApp('success', async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
       const responsePromise = page.waitForResponse(r => r.url().endsWith('/api/collect'));
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       const response = await responsePromise;
       assert.equal(response.headers()['cache-control'], 'no-store');
       const result = await response.json();
@@ -127,10 +129,10 @@ for (const [mode, recentCount, favoriteCount] of [['few', 3, 2], ['empty', 0, 0]
     await withApp(mode, async ({ base }) => {
       const page = await uiBrowser.newPage();
       try {
-        await page.goto(base);
+        await page.goto(base + '/classic');
         await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
         const responsePromise = page.waitForResponse(r => r.url().endsWith('/api/collect'));
-        await page.getByRole('button', { name: 'Collect my films' }).click();
+        await page.getByRole('button', { name: 'Look up' }).click();
         const result = await (await responsePromise).json();
         await page.locator('#results').waitFor({ state: 'visible' });
         assert.equal(result.complete, true);
@@ -151,9 +153,9 @@ test('long film titles stay within the mobile viewport and are rendered as text'
     const film = { title, filmUrl: 'https://letterboxd.com/film/test/', year: 2020, rating: 3.5 };
     await page.route('**/api/collect', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ username: 'alice', complete: true, recent: [{ ...film, watchedDate: '2020-01-01' }], watchedFilms: [film], watchlist: [film], recentRatingHistogram: { bins: Array.from({ length: 10 }, (_, i) => ({ rating: (i + 1) / 2, count: 1 })), totalRatings: 10 }, checks: {} }) }));
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       await page.locator('#results').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#results img').count(), 0);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -162,13 +164,134 @@ test('long film titles stay within the mobile viewport and are rendered as text'
   });
 });
 
+test('receipt and iceberg views summarize the feed, render text safely and clear', async () => {
+  const now = new Date().getUTCFullYear();
+  const years = [now, now - 1, 2023, 2019, 2008, 1996, 1984, 1974, 1962, 1951, 1938, 1927, 2021, 2014, 2003, 1990];
+  const recent = years.map((year, i) => ({ id: `letterboxd-watch-${i + 1}`, title: i === 0 ? '<img src=x onerror=alert(1)>' : `Film ${i}`, year, watchedDate: `2026-11-${String(20 - i).padStart(2, '0')}`,
+    rating: i % 5 === 4 ? null : 1 + (i % 4), liked: i % 3 === 0, rewatch: i === 2, reviewText: i % 4 === 0 ? 'Synthetic review.' : null, entryUrl: `https://letterboxd.com/alice/film/movie-${i}/` }));
+  const bins = Array.from({ length: 10 }, (_, i) => ({ rating: (i + 1) / 2, count: recent.filter(film => film.rating === (i + 1) / 2).length }));
+  const body = JSON.stringify({ username: 'alice', complete: true, scope: { mode: 'rss' }, recent, checks: { recent: { complete: true } }, recentRatingHistogram: { totalRatings: 13, bins } });
+  await withApp('success', async ({ base }) => {
+    const page = await uiBrowser.newPage({ viewport: { width: 375, height: 800 } });
+    await page.route('**/api/collect', route => route.fulfill({ contentType: 'application/json', body }));
+    try {
+      await page.goto(base + '/classic');
+      await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
+      await page.getByRole('button', { name: 'Look up' }).click();
+      await page.locator('#results').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#recent-list .recent').count(), 16);
+      assert.equal(await page.locator('#recent-list .recent').nth(6).isVisible(), false);
+      await page.getByRole('button', { name: 'Show the rest' }).click();
+      assert.equal(await page.locator('#recent-list .recent').nth(6).isVisible(), true);
+      assert.equal(await page.locator('#receipt-totals').innerText(), 'Liked some, reviewed a few, rewatched a single one, left a few unrated.');
+      assert.equal(await page.locator('#receipt-span').innerText(), '@alice\nAcross November');
+      assert.equal(await page.locator('#barcode .code-bar').count(), 16);
+      assert.equal(await page.locator('#barcode .code-bar.liked').count(), 6);
+      assert.equal(await page.locator('#barcode .code-bar.unrated').count(), 3);
+      assert.equal(await page.locator('#histogram .histogram-row').count(), 10);
+      assert.equal(await page.locator('#house-note').innerText(), 'Busiest on Thursdays and Fridays');
+      // The strip shows no numbers: only film titles (data) and screen-reader text may contain digits.
+      const digits = await page.evaluate(() => {
+        const found = [];
+        for (const strip of document.querySelectorAll('.strip, .rhythm, .meter-piece, .hearts-piece, .era-piece')) {
+        const walker = document.createTreeWalker(strip, NodeFilter.SHOW_TEXT);
+        for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+          const el = text.parentElement;
+          if (el.closest('.sr-only, .film-title, title') || !/\d/.test(text.data)) continue;
+          if (el.closest('svg') && getComputedStyle(el).visibility === 'hidden') continue;
+          found.push(text.data);
+        }
+        }
+        return found;
+      });
+      assert.deepEqual(digits, []);
+      assert.match(await page.locator('#receipt-clock').innerText(), /Clears in (1:5\d|2:00)/);
+      assert.equal(await page.locator('#extras').isVisible(), true);
+      assert.equal(await page.locator('#weekdays .seat.taken').count(), 16);
+      assert.deepEqual(await page.evaluate(() => ['#rhythm-note', '#meter-note', '#hearts-note', '#era-note'].map(id => document.querySelector(id).textContent)), ['Something on almost every night lately. Your longest run was sixteen nights in a row.', 'Even-handed lately: your films tend to land around three stars. Your ratings swing widely.', 'Your heart and your stars only loosely agree. A few guilty pleasures: films you liked but rated low.', 'You travel back in time more often than not. Older films weigh more with you: they earn more stars.']);
+      assert.equal(await page.locator('#era .scale-can').count(), 13);
+      assert.equal(await page.locator('#rhythm .rhythm-frame:not(.lit-0)').count(), 16);
+      assert.equal(await page.locator('#hearts .heart-mark').count() + await page.locator('#hearts .plain-mark').count(), 13);
+      assert.equal(await page.locator('#results img').count(), 0);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.getByRole('button', { name: 'Clear now' }).click();
+      assert.equal(await page.locator('#receipt-totals').innerText(), '');
+      assert.equal(await page.locator('#barcode *, #histogram *').count(), 0);
+      assert.equal(await page.locator('#keep-rolling').isHidden(), true);
+      assert.equal(await page.locator('#extras').isHidden(), true);
+      assert.equal(await page.locator('#weekdays *, #era *, #rhythm *, #meter *, #hearts *').count(), 0);
+      assert.deepEqual(await page.evaluate(() => ['#rhythm-note', '#meter-note', '#hearts-note', '#era-note'].map(id => document.querySelector(id).textContent).join('')), '');
+
+      // The main page keeps only the leader, seating chart and fuse in its strip, plus the habit pieces.
+      await page.goto(base + '/');
+      await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
+      await page.getByRole('button', { name: 'Look up' }).click();
+      await page.locator('#extras').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#barcode, #histogram, #recent-list .recent').count(), 0);
+      assert.equal(await page.locator('#weekdays .seat.taken').count(), 16);
+      assert.equal(await page.locator('#era .scale-can').count(), 13);
+      await page.getByRole('button', { name: 'Clear now' }).click();
+      assert.equal(await page.locator('#extras').isHidden(), true);
+      assert.equal(await page.locator('#weekdays *, #era *').count(), 0);
+
+      await page.goto(base + '/iceberg');
+      await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
+      await page.getByRole('button', { name: 'Sink my films' }).click();
+      await page.locator('#results').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('.berg-film').count(), 16);
+      assert.equal(await page.locator('#berg-list li').count(), 6);
+      assert.match(await page.locator('#berg-list').innerText(), /Above water · new releases · 2/);
+      assert.match(await page.locator('#berg-list').innerText(), /Before 1960 · 3/);
+      assert.equal(await page.locator('#results img').count(), 0);
+      await page.locator('.berg-film').first().dispatchEvent('mouseenter');
+      assert.match(await page.locator('#berg-tip').innerText(), new RegExp(`<img src=x onerror=alert\\(1\\)> · ${now}`));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.getByRole('button', { name: 'Clear now' }).click();
+      assert.equal(await page.locator('.berg-film').count(), 0);
+      assert.equal(await page.locator('#berg-list li').count(), 0);
+      assert.equal(await page.locator('#berg-tip').isHidden(), true);
+    } finally { await page.close(); }
+  }, 'extended', { ...ASSETS, ...HIDDEN_ASSETS });
+});
+
+test('lookup accepts @names and profile links, shows progress and moves focus', async () => {
+  await withApp('success', async ({ base }) => {
+    const page = await uiBrowser.newPage();
+    const sent = [];
+    let release;
+    await page.route('**/api/collect', async route => {
+      sent.push(JSON.parse(route.request().postData()).username);
+      await new Promise(resolve => { release = resolve; });
+      await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ username: 'alice', complete: true, scope: { mode: 'rss' }, recent: [], checks: { recent: { complete: true } }, recentRatingHistogram: { totalRatings: 0, bins: [] } }) });
+    });
+    try {
+      await page.goto(base + '/classic');
+      assert.equal(await page.locator('#empty-state').innerText(), 'Your films appear here.');
+      for (const typed of ['@alice', 'https://letterboxd.com/alice/films/']) {
+        await page.getByLabel('Your Letterboxd username', { exact: true }).fill(typed);
+        await page.getByRole('button', { name: 'Look up' }).click();
+        await page.waitForFunction(() => document.body.classList.contains('showtime'));
+        assert.equal(await page.locator('#submit').innerText(), 'Looking up…');
+        release();
+        await page.locator('#results').waitFor({ state: 'visible' });
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'result-title');
+        assert.equal(await page.locator('#submit').innerText(), 'Look up');
+        assert.equal(await page.evaluate(() => document.body.classList.contains('showtime')), false);
+        await page.getByRole('button', { name: 'Clear now', exact: true }).click();
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'username');
+      }
+      assert.deepEqual(sent, ['alice', 'alice']);
+    } finally { await page.close(); }
+  }, 'rss');
+});
+
 test('blocked collections remain transient and cannot be downloaded', async () => {
   await withApp('blocked', async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       await page.locator('#status.error').waitFor({ state: 'visible' });
       assert.match(await page.locator('#status').innerText(), /Collection incomplete/);
       assert.equal(await page.locator('#result-label').innerText(), 'Incomplete lookup');
@@ -213,11 +336,11 @@ test('username pasted with surrounding spaces submits successfully', async () =>
   await withApp('success', async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill(' alice ');
       assert.equal(await page.locator('#username').evaluate(el => el.validity.patternMismatch), false);
       const responsePromise = page.waitForResponse(r => r.url().endsWith('/api/collect'), { timeout: 15000 });
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       assert.equal((await (await responsePromise).json()).username, 'alice');
     } finally { await page.close(); }
   });
@@ -230,11 +353,35 @@ test('initial website load has no missing assets or browser errors', async () =>
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       const icon = await page.locator('link[rel="icon"]').getAttribute('href', { timeout: 1000 });
       assert.equal((await fetch(new URL(icon, base))).status, 200);
       assert.deepEqual(errors, []);
     } finally { await page.close(); }
+  });
+});
+
+test('main page loads cleanly, fits narrow phones and stops all motion for reduced motion', async () => {
+  await withApp('success', async ({ base }) => {
+    const errors = [];
+    for (const width of [320, 375]) {
+      const page = await uiBrowser.newPage({ viewport: { width, height: 760 }, reducedMotion: 'reduce' });
+      page.on('pageerror', error => errors.push(error.message));
+      page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+      const missing = [];
+      page.on('response', response => { if (response.status() >= 400) missing.push(response.url()); });
+      try {
+        await page.goto(base + '/');
+        await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
+        await page.getByRole('button', { name: 'Look up' }).click();
+        await page.locator('#extras').waitFor({ state: 'visible' });
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+        assert.equal(await page.evaluate(() => document.getAnimations().filter(animation => animation.playState === 'running').length), 0);
+        assert.match(await page.locator('#recent-count').textContent(), /^\d+ entries$/);
+        assert.deepEqual(missing, []);
+      } finally { await page.close(); }
+    }
+    assert.deepEqual(errors, []);
   });
 });
 
@@ -243,11 +390,11 @@ test('repeated submissions recover after a failed collection without retaining o
   await withApp(() => modes.shift(), async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
       for (const complete of [true, false, true]) {
         const pending = page.waitForResponse(r => r.url().endsWith('/api/collect'));
-        await page.getByRole('button', { name: 'Collect my films' }).click();
+        await page.getByRole('button', { name: 'Look up' }).click();
         const result = await (await pending).json();
         await page.waitForFunction(() => !document.querySelector('#submit').disabled);
         assert.equal('id' in result, false);
@@ -319,9 +466,9 @@ test('Clear now removes all displayed data and the username without browser stor
   await withApp('success', async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       await page.locator('#results').waitFor({ state: 'visible' });
       await page.getByRole('button', { name: 'Clear now', exact: true }).click();
       assert.equal(await page.locator('#results').isHidden(), true);
@@ -339,9 +486,9 @@ test('results expire after two minutes', async () => {
     const page = await uiBrowser.newPage();
     try {
       await page.clock.install();
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       await page.locator('#results').waitFor({ state: 'visible' });
       await page.clock.fastForward(120001);
       assert.equal(await page.locator('#results').isHidden(), true);
@@ -356,9 +503,9 @@ test('navigating away and back does not restore the previous lookup', async () =
   await withApp('success', async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       await page.locator('#results').waitFor({ state: 'visible' });
       await page.goto(`${base}/favicon.svg`);
       await page.goBack();
@@ -487,9 +634,9 @@ test('private watchlist renders verified partial sections and never shows collec
   await withApp('private-watchlist', async ({ base }) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');
-      await page.getByRole('button', { name: 'Collect my films' }).click();
+      await page.getByRole('button', { name: 'Look up' }).click();
       await page.locator('#status.error').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#result-label').innerText(), 'Incomplete lookup');
       assert.equal(await page.locator('#recent-list .recent').count(), 50);
@@ -589,10 +736,10 @@ test('story-only RSS renders a verified empty movie window and keeps later colle
   await withApp('stories-only', async ({base}) => {
     const page = await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username', {exact:true}).fill('alice');
       const pending=page.waitForResponse(r=>r.url().endsWith('/api/collect'));
-      await page.getByRole('button',{name:'Collect my films'}).click();
+      await page.getByRole('button',{name:'Look up'}).click();
       const result=await (await pending).json();
       await page.locator('#results').waitFor({state:'visible'});
       assert.equal(result.complete,true);
@@ -600,7 +747,7 @@ test('story-only RSS renders a verified empty movie window and keeps later colle
       assert.equal(result.recent.length,0);
       assert.equal(result.recentRatingHistogram.totalRatings,0);
       assert.equal(await page.locator('#status').innerText(),'Collection complete.');
-      assert.match(await page.locator('#recent-list').innerText(),/No movie entries/);
+      assert.match(await page.locator('#recent-list').innerText(),/No recent films found/);
       assert.equal(await page.locator('#watched-list .film-row').count(),72);
       assert.equal(await page.locator('#watchlist-list .film-row').count(),28);
     } finally { await page.close(); }
@@ -611,10 +758,10 @@ test('an unavailable account shows incomplete and never invents empty collection
   await withApp('not-found', async ({base}) => {
     const page=await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username',{exact:true}).fill('alice');
       const pending=page.waitForResponse(r=>r.url().endsWith('/api/collect'));
-      await page.getByRole('button',{name:'Collect my films'}).click();
+      await page.getByRole('button',{name:'Look up'}).click();
       const result=await (await pending).json();
       await page.locator('#status.error').waitFor({state:'visible'});
       assert.equal(result.complete,false);
@@ -633,10 +780,10 @@ test('an empty public watchlist is not made private by settings text', async () 
   await withApp('public-empty-watchlist', async ({base}) => {
     const page=await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username',{exact:true}).fill('alice');
       const pending=page.waitForResponse(r=>r.url().endsWith('/api/collect'));
-      await page.getByRole('button',{name:'Collect my films'}).click();
+      await page.getByRole('button',{name:'Look up'}).click();
       const result=await (await pending).json();
       await page.locator('#results').waitFor({state:'visible'});
       assert.equal(result.complete,true);
@@ -684,16 +831,17 @@ test('RSS-only website makes its reduced scope visible and hides omitted collect
   await withApp('success',async({base})=>{
     const page=await uiBrowser.newPage();
     try {
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username',{exact:true}).fill('alice');
       const pending=page.waitForResponse(r=>r.url().endsWith('/api/collect'));
-      await page.getByRole('button',{name:'Collect my films'}).click();
+      await page.getByRole('button',{name:'Look up'}).click();
       const result=await (await pending).json();
       await page.locator('#results').waitFor({state:'visible'});
       assert.equal(result.complete,true); assert.equal(result.scope.mode,'rss');
-      assert.equal(await page.locator('#status').innerText(),'RSS feed collected.');
+      assert.equal(await page.locator('#status').innerText(),'Films collected.');
       assert.equal(await page.locator('.film-collection:visible').count(),0);
-      assert.match(await page.locator('.lede').innerText(),/RSS.*not your full history/);
+      assert.match(await page.locator('.lede').innerText(),/not your full history/);
+      assert.doesNotMatch(await page.locator('body').innerText(),/RSS/i);
       await page.getByRole('button',{name:'Clear now',exact:true}).click();
       assert.equal(await page.locator('#results').isHidden(),true);
       assert.equal(await page.locator('#username').inputValue(),'');
@@ -719,9 +867,9 @@ test('transport failure stays unsuccessful and its username/error expire', async
     try {
       await page.clock.install();
       await page.route('**/api/collect',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Service unavailable.'})}));
-      await page.goto(base);
+      await page.goto(base + '/classic');
       await page.getByLabel('Your Letterboxd username',{exact:true}).fill('alice');
-      await page.getByRole('button',{name:'Collect my films'}).click();
+      await page.getByRole('button',{name:'Look up'}).click();
       await page.locator('#status.error').waitFor({state:'visible'});
       assert.equal(await page.locator('#results').isHidden(),true);
       assert.equal(await page.locator('#submit').isEnabled(),true);

@@ -5,7 +5,9 @@ import { collectEphemeralSnapshot } from './snapshot.js';
 import { validateUsername } from './scraper.js';
 import { createNightStore } from './night.js';
 
-export const ASSETS = { '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/style.css': ['style.css', 'text/css; charset=utf-8'], '/favicon.svg': ['favicon.svg', 'image/svg+xml'], '/night': ['night.html', 'text/html; charset=utf-8'], '/night.js': ['night.js', 'text/javascript; charset=utf-8'], '/night.css': ['night.css', 'text/css; charset=utf-8'] };
+export const ASSETS = { '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/style.css': ['style.css', 'text/css; charset=utf-8'], '/favicon.svg': ['favicon.svg', 'image/svg+xml'], '/reel.css': ['reel.css', 'text/css; charset=utf-8'] };
+// Pages hidden while they are reworked: kept for tests, never routed in production.
+export const HIDDEN_ASSETS = { '/classic': ['classic.html', 'text/html; charset=utf-8'], '/iceberg': ['iceberg.html', 'text/html; charset=utf-8'], '/iceberg.css': ['iceberg.css', 'text/css; charset=utf-8'], '/night': ['night.html', 'text/html; charset=utf-8'], '/night.js': ['night.js', 'text/javascript; charset=utf-8'], '/night.css': ['night.css', 'text/css; charset=utf-8'] };
 export const SECURITY_HEADERS = {
   'Cache-Control': 'no-store', Pragma: 'no-cache', Expires: '0', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
@@ -31,7 +33,7 @@ async function readBody(request) {
 }
 const foreignOrigin = (request, url) => { const origin = request.headers.get('origin'); return origin && origin !== `http://${url.host}` && origin !== `https://${url.host}`; };
 
-export function createHandler({ collect = collectEphemeralSnapshot, nightOptions = {}, readAsset } = {}) {
+export function createHandler({ collect = collectEphemeralSnapshot, nightOptions = {}, readAsset, assets = ASSETS } = {}) {
   let busy = false;
   const nights = createNightStore({ ...nightOptions, collect, startJob: job => {
     if (busy) return false;
@@ -42,8 +44,8 @@ export function createHandler({ collect = collectEphemeralSnapshot, nightOptions
 
   async function route(request) {
     const url = new URL(request.url);
-    if (request.method === 'GET' && ASSETS[url.pathname] && readAsset) {
-      const [file, contentType] = ASSETS[url.pathname];
+    if (request.method === 'GET' && assets[url.pathname] && readAsset) {
+      const [file, contentType] = assets[url.pathname];
       return new Response(await readAsset(file), { status: 200, headers: { ...SECURITY_HEADERS, 'Content-Type': contentType } });
     }
     if (url.pathname === '/api/night' || url.pathname.startsWith('/api/night/')) {

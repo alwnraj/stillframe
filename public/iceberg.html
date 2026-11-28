@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Your recent Letterboxd films, sunk by release year.">
+  <title>Cinema iceberg · Stillframe</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/iceberg.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead"><a href="/" class="wordmark">stillframe</a><nav class="site-nav" aria-label="Pages"><a href="/">Receipt</a><a href="/iceberg" aria-current="page">Iceberg</a><a href="/night">Movie night</a></nav></header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy"><h1 id="page-title">Your cinema iceberg</h1><p class="lede">New releases float at the tip. The older the film, the deeper it sinks. Depth means release year, not obscurity.</p></div>
+        <form id="collect-form" class="collect-form">
+          <label for="username">Your Letterboxd username</label>
+          <div class="input-wrap"><input id="username" name="username" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. dave" required></div>
+          <p class="privacy-note">No saved lookups or application logs. Results clear after two minutes.</p>
+          <button id="submit" type="submit" data-busy="Sinking your films…">Sink my films</button>
+          <p class="consent">By continuing, you confirm this is your account or you have the account owner’s permission.</p>
+        </form>
+      </section>
+      <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+      <section id="results" class="results" aria-labelledby="result-title" hidden>
+        <div class="result-heading"><div><p class="lookup-state" id="result-label">Current lookup</p><h2 id="result-title" tabindex="-1"></h2></div><button id="clear-results" class="clear-button" type="button">Clear now</button></div>
+        <div class="berg-stage">
+          <svg id="iceberg" class="iceberg" role="group" aria-label="Your recent films placed by release year, newest at the top"></svg>
+          <div id="berg-tip" class="berg-tip" role="presentation" hidden></div>
+        </div>
+        <p class="berg-key"><span class="key-dot key-rated"></span>Bigger and darker = higher rating <span class="key-dot key-liked"></span>Liked <span class="key-dot key-rewatch"></span>Rewatch <span class="key-dot key-unrated"></span>Unrated</p>
+        <ol id="berg-list" class="berg-list" aria-label="Films by depth"></ol>
+      </section>
+      <section id="empty-state" class="empty-state"><p>No films collected.</p></section>
+    </main>
+    <footer>Recent films only, not full histories. Not affiliated with Letterboxd.</footer>
+  </div>
+</body>
+</html>

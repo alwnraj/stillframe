@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createHandler } from '../src/app.js';
 
 // The Cloudflare Durable Object calls handle() directly with Web Requests.
@@ -24,6 +25,20 @@ test('platform-neutral handler works with plain Requests, as on Cloudflare', asy
     const { token, room: view } = await room.json();
     const peek = await app.handle(new Request(`https://stillframe.example/api/night/${view.id}`, { headers: { Authorization: `Bearer ${token}` } }));
     assert.equal((await peek.json()).members.length, 1);
+  } finally { app.close(); }
+});
+
+test('hidden pages are not routed in production', async () => {
+  const app = createHandler({ readAsset: file => readFile(new URL(`../public/${file}`, import.meta.url)) });
+  try {
+    const get = path => app.handle(new Request(`https://stillframe.example${path}`));
+    assert.equal((await get('/')).status, 200);
+    assert.match(await (await get('/')).text(), /class="reel-pop"[\s\S]*id="collect-form"/);
+    assert.equal((await get('/reel.css')).status, 200);
+    assert.equal((await get('/reel')).status, 404);
+    assert.equal((await get('/classic')).status, 404);
+    assert.doesNotMatch(await (await get('/')).text(), /href="\/(night|iceberg)/);
+    for (const path of ['/night', '/night.js', '/night.css', '/iceberg', '/iceberg.css']) assert.equal((await get(path)).status, 404);
   } finally { app.close(); }
 });
 

@@ -1,0 +1,12 @@
+.berg-stage{position:relative;max-width:560px;margin:0 auto}
+.iceberg{display:block;width:100%;height:auto;border-radius:6px;border:1px solid var(--line)}
+.band-label{font-size:13px;fill:#0f335c;font-family:'Avenir Next','Segoe UI',sans-serif}.band-label.deep{fill:#e6f1fb}.band-label.end{text-anchor:end}
+.berg-label{font-size:12px;fill:#0f335c;font-family:Georgia,serif;pointer-events:none;paint-order:stroke;stroke:#f4f8fc;stroke-width:3px;stroke-linejoin:round}
+.berg-film{cursor:pointer;outline:none}.berg-film:focus-visible circle:last-child,.berg-film:hover circle:last-child{stroke:#202e28;stroke-width:3}
+.berg-tip{position:absolute;max-width:200px;padding:8px 11px;background:#fffefa;border:1px solid var(--line);border-radius:4px;font-size:.8rem;line-height:1.45;pointer-events:none;box-shadow:0 4px 14px rgba(15,51,92,.18)}
+.berg-key{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;font-size:.8rem;color:var(--muted);margin:16px 0 8px}
+.key-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.key-rated{background:#3b6d11}.key-liked{background:#fff;border:3px solid #d4537e}.key-rewatch{border:1.5px dashed #2f6fae}.key-unrated{background:#b4b2a9}
+.berg-list{list-style:none;padding:0;margin:30px auto 60px;max-width:720px}.berg-list li{border-top:1px solid var(--line);padding:14px 0}
+.berg-list h3{font-family:Georgia,serif;font-weight:400;font-size:1.15rem;margin:0 0 6px}.berg-list p{margin:0;font-size:.88rem;line-height:1.6;color:var(--muted)}
+@media(max-width:600px){.berg-label{display:none}}
