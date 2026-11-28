@@ -193,11 +193,11 @@ test('receipt and iceberg views summarize the feed, render text safely and clear
       // The strip shows no numbers: only film titles (data) and screen-reader text may contain digits.
       const digits = await page.evaluate(() => {
         const found = [];
-        for (const strip of document.querySelectorAll('.strip, .rhythm, .meter-piece, .hearts-piece, .era-piece')) {
+        for (const strip of document.querySelectorAll('.strip, .rhythm, .meter-piece, .hearts-piece, .era-piece, .floe-piece')) {
         const walker = document.createTreeWalker(strip, NodeFilter.SHOW_TEXT);
         for (let text = walker.nextNode(); text; text = walker.nextNode()) {
           const el = text.parentElement;
-          if (el.closest('.sr-only, .film-title, title') || !/\d/.test(text.data)) continue;
+          if (el.closest('.sr-only, .film-title, title, .floe-name') || !/\d/.test(text.data)) continue;
           if (el.closest('svg') && getComputedStyle(el).visibility === 'hidden') continue;
           found.push(text.data);
         }
@@ -230,9 +230,18 @@ test('receipt and iceberg views summarize the feed, render text safely and clear
       assert.equal(await page.locator('#barcode, #histogram, #recent-list .recent').count(), 0);
       assert.equal(await page.locator('#weekdays .seat.taken').count(), 16);
       assert.equal(await page.locator('#era .scale-can').count(), 13);
+      assert.equal(await page.locator('#floe .floe-film').count(), 16);
+      // Names run newest to oldest down the berg; long titles are shortened as plain text, never markup.
+      const names = await page.locator('#floe .floe-name').allTextContents();
+      assert.equal(names.length, 16);
+      assert.match(names[0], /^<img src=x .*…$/);
+      assert.deepEqual(names.slice(-3), ['Film 9', 'Film 10', 'Film 11']);
+      assert.equal(await page.locator('#floe .floe-label.empty').count(), 0);
+      assert.equal(await page.locator('#floe-note').textContent(), 'Your iceberg runs deep: most of what you watch is older than a generation. Your deepest dive: Film 11, from the silent era. You have ice at nearly every depth.');
       await page.getByRole('button', { name: 'Clear now' }).click();
       assert.equal(await page.locator('#extras').isHidden(), true);
-      assert.equal(await page.locator('#weekdays *, #era *').count(), 0);
+      assert.equal(await page.locator('#weekdays *, #era *, #floe *').count(), 0);
+      assert.equal(await page.locator('#floe-note').textContent(), '');
 
       await page.goto(base + '/iceberg');
       await page.getByLabel('Your Letterboxd username', { exact: true }).fill('alice');

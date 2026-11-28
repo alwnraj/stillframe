@@ -87,7 +87,7 @@ body.bake:before,body.bake:after{display:none}
 @keyframes liftoff{0%{opacity:0;transform:translateY(90px) rotateX(38deg) scale(.92);box-shadow:0 0 0 var(--red),0 0 0 rgba(42,31,27,0)}55%{opacity:1;transform:translateY(-12px) rotateX(-5deg) scale(1.02)}100%{transform:none}}
 }
 @media(prefers-reduced-motion:reduce){.bake .strip,.bake .receipt .recent{transition:none}.bake .strip:hover,.bake .receipt .recent:hover{translate:none}}
-.bake .rhythm,.bake .meter-piece,.bake .hearts-piece,.bake .era-piece{border:2px solid var(--ink);background-image:none;background-color:#fffaf0}
+.bake .rhythm,.bake .meter-piece,.bake .hearts-piece,.bake .era-piece,.bake .floe-piece{border:2px solid var(--ink);background-image:none;background-color:#fffaf0}
 .bake .rhythm-strip,.bake .meter,.bake .hearts,.bake .era{filter:none}
 
 /* Motion, this page only: everything that is not clickable sways, bobs, beats or flickers. Links, buttons and the
@@ -129,8 +129,8 @@ body.bake:before,body.bake:after{display:none}
 
 /* The pieces below */
 .bake .extras-title{display:inline-block;transform-origin:left;animation:sway 4s ease-in-out infinite}
-.bake .rhythm,.bake .meter-piece,.bake .era-piece,.bake .hearts-piece{animation:floaty 6s ease-in-out infinite}
-.bake .meter-piece{animation-delay:-1.5s}.bake .era-piece{animation-delay:-3s}.bake .hearts-piece{animation-delay:-4.5s}
+.bake .rhythm,.bake .meter-piece,.bake .era-piece,.bake .hearts-piece,.bake .floe-piece{animation:floaty 6s ease-in-out infinite}
+.bake .meter-piece{animation-delay:-1.5s}.bake .era-piece{animation-delay:-3s}.bake .hearts-piece{animation-delay:-4.5s}.bake .floe-piece{animation-delay:-2.2s}
 @keyframes floaty{0%,100%{translate:0 0;rotate:-.5deg}50%{translate:0 -7px;rotate:.5deg}}
 .bake .meter-needle{transform-box:view-box;transform-origin:120px 124px;animation:needle 1.4s .3s cubic-bezier(.3,1.6,.5,1) backwards,quiver .7s 1.7s ease-in-out infinite alternate}
 @keyframes needle{from{rotate:-150deg}}
@@ -179,8 +179,8 @@ body.bake:before,body.bake:after{display:none}
 @keyframes roll{50%{translate:3px -3px}}
 .bake .meter-band{animation:band 1.4s ease-in-out infinite}
 @supports (animation-timeline:view()){
-.bake .rhythm,.bake .meter-piece,.bake .era-piece,.bake .hearts-piece{animation:floaty 6s ease-in-out infinite,swoop linear both;animation-timeline:auto,view();animation-range:normal,entry 0% entry 95%}
-.bake .meter-piece{animation-delay:-1.5s,0s}.bake .era-piece{animation-delay:-3s,0s}.bake .hearts-piece{animation-delay:-4.5s,0s}
+.bake .rhythm,.bake .meter-piece,.bake .era-piece,.bake .hearts-piece,.bake .floe-piece{animation:floaty 6s ease-in-out infinite,swoop linear both;animation-timeline:auto,view();animation-range:normal,entry 0% entry 95%}
+.bake .meter-piece{animation-delay:-1.5s,0s}.bake .era-piece{animation-delay:-3s,0s}.bake .hearts-piece{animation-delay:-4.5s,0s}.bake .floe-piece{animation-delay:-2.2s,0s}
 .bake .meter-piece,.bake .hearts-piece{--spin:7deg}
 @keyframes swoop{from{opacity:0;transform:translateY(90px) rotate(var(--spin,-7deg)) scale(.8)}}
 }
@@ -193,3 +193,37 @@ body.bake:before,body.bake:after{display:none}
 
 /* Off-screen skipping: each piece below skips rendering, and its animations, while out of view. */
 .bake .extras-grid>.piece{content-visibility:auto;contain-intrinsic-size:auto 360px}
+
+/* The deep end: the film-age iceberg. Only the boat, gulls, fish, bubbles and weed move. */
+.floe-piece{text-align:center}
+.floe{display:block;width:100%;max-width:none;height:auto;margin:6px auto 0}
+.floe-sun{fill:var(--gold);stroke:var(--ink);stroke-width:1.5}.floe-rays{stroke:#c99a2e;stroke-width:2;stroke-linecap:round}
+.floe-cloud{fill:#fff;stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.floe-gull{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
+.floe-light{fill:#fff;opacity:.16}
+.floe-ice{fill:#fbfdfc;stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round}
+.floe-shade{fill:#cfe3e6;opacity:.7}
+.floe-facet{fill:none;stroke:#a9c7cd;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.floe-tint{fill:#1d3647;opacity:.14;pointer-events:none}
+.floe-waterline{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.floe-film rect{fill:#2a1f1b}.floe-film .floe-picture{fill:#f4efe2}
+.floe-film.liked rect{fill:#5e0f19}.floe-film.liked .floe-picture{fill:#c24a55}
+.floe-film.unrated rect{fill:#8a8178}.floe-film.unrated .floe-picture{fill:#e7e1d4}
+.floe-label{font:italic 700 16px Georgia,'Times New Roman',serif;fill:var(--ink);paint-order:stroke;stroke:#fffaf0;stroke-width:4px;stroke-linejoin:round}.floe-label.deep{fill:#f4efe2;stroke:#24485a}
+.floe-name{font:italic 14px Georgia,'Times New Roman',serif;fill:var(--ink);opacity:0;translate:-10px 0;transition:opacity .4s ease-out,translate .5s cubic-bezier(.3,1.7,.5,1)}
+.floe-layer.seen .floe-name{opacity:1;translate:0 0}.floe-film.liked .floe-name{fill:#7a1420}
+@media(prefers-reduced-motion:reduce){.floe-name{opacity:1;translate:none}}.floe-label.empty{opacity:.5}
+.floe-fish path{fill:var(--gold);stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round}
+.floe-bubbles circle{fill:none;stroke:#e8f3f4;stroke-width:1.2}
+.floe-bed{fill:#2a1f1b}
+.floe-weed path{fill:none;stroke:#5b8a4e;stroke-width:3;stroke-linecap:round}
+.floe-hull{fill:var(--red);stroke:var(--ink);stroke-width:1.5;stroke-linejoin:round}.floe-mast{stroke:var(--ink);stroke-width:2}.floe-flag{fill:var(--gold);stroke:var(--ink);stroke-width:1}
+.floe-line{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:4 3}.floe-knot{stroke:var(--ink);stroke-width:1.5}.floe-lead{fill:#6b5a50;stroke:var(--ink);stroke-width:1.2}
+.bake .floe-boat,.bake .floe-gulls,.bake .floe-fish,.bake .floe-bubbles,.bake .floe-weed{transform-box:fill-box;transform-origin:50% 100%}
+.bake .floe-boat{animation:sway 3s ease-in-out infinite}
+.bake .floe-gulls{animation:bob 4s ease-in-out infinite}
+.bake .floe-fish{animation:swim 7s ease-in-out infinite}.bake .floe-fish.back{animation-duration:9s;animation-direction:reverse}
+@keyframes swim{0%,100%{translate:0 0}50%{translate:22px -3px}}
+.bake .floe-bubbles{animation:rise 3.4s ease-in infinite}
+@keyframes rise{from{translate:0 0;opacity:0}20%{opacity:1}to{translate:0 -60px;opacity:0}}
+.bake .floe-weed{animation:sway 4.5s ease-in-out infinite}

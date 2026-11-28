@@ -87,7 +87,7 @@ try {
   assert.ok(removedDownload.status() === 404); await removedDownload.dispose();
   await page.getByRole('button', { name: 'Clear now', exact: true }).click();
   assert.ok(await page.locator('#results').isHidden());
-  assert.ok(await page.locator('.recent, .favorite, .histogram-row, .film-row, .seat, .scale-can, .heart-mark, .plain-mark, .rhythm-frame').count() === 0);
+  assert.ok(await page.locator('.recent, .favorite, .histogram-row, .film-row, .seat, .scale-can, .floe-film, .heart-mark, .plain-mark, .rhythm-frame').count() === 0);
   assert.ok(await page.locator('#username').inputValue() === '');
   assert.ok(!browserError);
 } catch {

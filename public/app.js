@@ -29,16 +29,18 @@ function normalizeUsername(text) {
   return value.match(/^(?:https?:\/\/)?(?:www\.)?letterboxd\.com\/([^/?#\s]+)/i)?.[1] ?? value;
 }
 
+let floeWatch = null; // reveals iceberg names layer by layer; dropped on every redraw and clear
 function clearResults(clearInput = true) {
   lookupVersion++;
+  floeWatch?.disconnect(); floeWatch = null;
   currentRequest?.abort(); currentRequest = null;
   clearTimeout(expiryTimer); clearInterval(clockTimer);
-  for (const selector of ['#recent-list', '#watched-list', '#watchlist-list', '#histogram', '#receipt-totals', '#receipt-footer', '#receipt-span', '#iceberg', '#berg-list', '#era', '#rhythm', '#meter', '#hearts', '#weekdays', '#barcode']) $(selector)?.replaceChildren();
-  for (const selector of ['#result-title', '#recent-count', '#watched-count', '#watchlist-count', '#histogram-count', '#watched-coverage', '#watchlist-coverage', '#receipt-clock', '#berg-tip', '#leader-count', '#house-note', '#rhythm-note', '#meter-note', '#hearts-note', '#era-note']) { const el = $(selector); if (el) el.textContent = ''; }
+  for (const selector of ['#recent-list', '#watched-list', '#watchlist-list', '#histogram', '#receipt-totals', '#receipt-footer', '#receipt-span', '#iceberg', '#berg-list', '#era', '#floe', '#rhythm', '#meter', '#hearts', '#weekdays', '#barcode']) $(selector)?.replaceChildren();
+  for (const selector of ['#result-title', '#recent-count', '#watched-count', '#watchlist-count', '#histogram-count', '#watched-coverage', '#watchlist-coverage', '#receipt-clock', '#berg-tip', '#leader-count', '#house-note', '#rhythm-note', '#meter-note', '#hearts-note', '#era-note', '#floe-note']) { const el = $(selector); if (el) el.textContent = ''; }
   $('#berg-tip')?.setAttribute('hidden', '');
   $('#receipt')?.classList.remove('rolling');
   $('#keep-rolling')?.setAttribute('hidden', '');
-  $('#extras')?.setAttribute('hidden', ''); $('#weekdays')?.removeAttribute('aria-label'); for (const id of ['#rhythm', '#meter', '#hearts', '#era']) $(id)?.removeAttribute('aria-label'); $('#barcode')?.removeAttribute('aria-label'); $('#receipt-totals') && ($('#receipt-totals').textContent = ''); $('#receipt-footer') && ($('#receipt-footer').textContent = '');
+  $('#extras')?.setAttribute('hidden', ''); $('#weekdays')?.removeAttribute('aria-label'); for (const id of ['#rhythm', '#meter', '#hearts', '#era', '#floe']) $(id)?.removeAttribute('aria-label'); $('#barcode')?.removeAttribute('aria-label'); $('#receipt-totals') && ($('#receipt-totals').textContent = ''); $('#receipt-footer') && ($('#receipt-footer').textContent = '');
   results.hidden = true; empty.hidden = false;
   status.hidden = true; status.textContent = ''; status.className = 'status';
   setBusy(false);
@@ -395,6 +397,178 @@ function drawEra(films) {
   note.textContent = notes.join(' ');
 }
 
+// The deep end: an iceberg of release years. Layers are cut from each person's own films, so the ice
+// spreads out whether they watch mostly this year's releases or mostly old ones: newest on the tip,
+// oldest at the keel. Depth says nothing about obscurity.
+const DECADES = [[2020, 'now'], [2010, 'the twenty-tens'], [2000, 'the noughties'], [1990, 'the nineties'], [1980, 'the eighties'], [1970, 'the seventies'], [1960, 'the sixties'], [1950, 'the fifties'], [1940, 'the forties'], [1930, 'the thirties'], [-Infinity, 'the silent era']];
+const yearsBack = age => age <= 0 ? 'this year' : age === 1 ? 'last year' : `${say(age)} years back`;
+// A layer's name in words: years back while it is recent, decades once it is older than twenty years.
+// When a neighbouring layer shares an end decade, that end says early, mid or late so names never overlap.
+const decadeOf = year => DECADES.findIndex(([from]) => year >= from);
+const decadePart = (word, part) => part && word.startsWith('the ') && word !== 'the silent era' ? word.replace('the ', `the ${part}${part === 'mid' ? '-' : ' '}`) : word;
+function depthName(newest, oldest, sharedNewest = false, sharedOldest = false) {
+  const near = Math.max(0, NOW_YEAR - newest), far = Math.max(0, NOW_YEAR - oldest);
+  if (far <= 20) return near === far ? yearsBack(near) : near === 0 && far === 1 ? 'this year and last' : near === 0 ? `within ${say(far)} years` : `${say(near)} to ${say(far)} years back`;
+  const a = decadeOf(newest), b = decadeOf(oldest);
+  const top = sharedNewest ? (newest % 10 <= 4 ? 'early' : 'mid') : '', bottom = sharedOldest ? (oldest % 10 >= 5 ? 'late' : 'mid') : '';
+  if (a === b) return decadePart(DECADES[a][1], top && bottom ? 'mid' : top || bottom);
+  const newer = decadePart(DECADES[a][1], top), older = decadePart(DECADES[b][1], bottom);
+  if (a === 0) return `${older} to now`;
+  return b - a === 1 ? `${older} and ${newer.replace('the ', '')}` : `${older} to ${newer}`;
+}
+// Splits the release years, newest first, into at most nine runs of whole years with film counts as
+// even as possible (least sum of squared layer sizes). A single year is never split: the feed has years only.
+function splitYears(films, most = 9) {
+  const years = [...new Set(films.map(film => film.year))].sort((x, y) => y - x);
+  const prefix = [0];
+  years.forEach(year => prefix.push(prefix.at(-1) + films.filter(film => film.year === year).length));
+  const n = years.length, k = Math.min(most, n);
+  const cost = Array.from({ length: k + 1 }, () => Array(n + 1).fill(Infinity)), cut = cost.map(row => row.map(() => 0));
+  cost[0][0] = 0;
+  for (let j = 1; j <= k; j++) for (let i = j; i <= n; i++) for (let m = j - 1; m < i; m++) {
+    const size = prefix[i] - prefix[m], total = cost[j - 1][m] + size * size;
+    if (total < cost[j][i]) { cost[j][i] = total; cut[j][i] = m; }
+  }
+  const runs = [];
+  for (let j = k, i = n; j > 0; i = cut[j][i], j--) runs.unshift(years.slice(cut[j][i], i));
+  return runs;
+}
+const SEA = ['#cfe3e4', '#a9cdd2', '#7fb0ba', '#5a8f9c', '#3e6f7f', '#24485a'];
+const PROFILE = [.55, .78, .94, 1, .9, .74, .56];
+const profileAt = (i, count) => { if (count < 2) return .8; const t = i / (count - 1) * 6, low = Math.floor(t); return PROFILE[low] + (PROFILE[Math.min(6, low + 1)] - PROFILE[low]) * (t - low); };
+
+function drawFloe(films) {
+  const art = $('#floe');
+  floeWatch?.disconnect(); floeWatch = null;
+  if (!art) return;
+  const dated = byTitle(films).filter(film => Number.isInteger(film.year) && film.year <= NOW_YEAR + 1);
+  const note = $('#floe-note');
+  if (!dated.length) { note.textContent = 'No release years in these films, so there is nothing to sink.'; return; }
+  const narrow = innerWidth < 560, width = narrow ? 330 : 760, right = narrow ? 30 : 70;
+  const cx = (width - right) / 2 + 4, widest = (width - right) / 2 - 8, cell = narrow ? 17 : 24, rowH = narrow ? 32 : 40;
+  const charWidth = narrow ? 6.2 : 6.9, head = narrow ? 42 : 50;
+  const runs = splitYears(dated);
+  let y = 120;
+  const layers = runs.map((years, i) => {
+    const group = dated.filter(film => years.includes(film.year)).sort((a, b) => b.year - a.year);
+    const name = depthName(years[0], years.at(-1), i > 0 && decadeOf(years[0]) === decadeOf(runs[i - 1].at(-1)), i < runs.length - 1 && decadeOf(years.at(-1)) === decadeOf(runs[i + 1][0])), label = name[0].toUpperCase() + name.slice(1);
+    // A crowded layer bulges, and packs its names two to a row even on a phone.
+    const half = widest * Math.max(profileAt(i, runs.length), group.length > 12 ? .96 : group.length > 6 ? .82 : 0);
+    const perRow = Math.max(1, Math.floor(2 * half * .82 / (narrow ? group.length > 12 ? 120 : 160 : group.length > 12 ? 165 : 210)));
+    const height = head + Math.ceil(group.length / perRow) * rowH + 18;
+    const layer = { name, label, group, half, perRow, top: y, height };
+    y += height;
+    return layer;
+  });
+  const water = layers[1]?.top ?? y, floor = y, height = floor + 34;
+  const wobble = (key, spread) => 1 - spread / 2 + hash(key) * spread;
+  art.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  // Sky and sea: the sun, two gulls, then one band of water per layer, darker as it deepens.
+  const sky = svg(art, 'g', { class: 'floe-sky' });
+  svg(sky, 'circle', { cx: 40, cy: 38, r: 16, class: 'floe-sun' });
+  svg(sky, 'path', { d: 'M40 12v-6M40 64v6M14 38h-6M66 38h6M22 20l-4-4M58 56l4 4M58 20l4-4M22 56l-4 4', class: 'floe-rays' });
+  [[width * .3, 30, 1], [width * .72, 56, .8]].forEach(([x, cy, k]) => svg(sky, 'path', { d: `M${x} ${cy}h${60 * k}a${10 * k} ${10 * k} 0 0 0 -8 -16a${14 * k} ${14 * k} 0 0 0 -24 -6a${11 * k} ${11 * k} 0 0 0 -22 8a${8 * k} ${8 * k} 0 0 0 -6 14z`, class: 'floe-cloud' }));
+  const gulls = svg(art, 'g', { class: 'floe-gulls' });
+  svg(gulls, 'path', { d: `M${cx + widest * .5} 74q6 -7 12 0q6 -7 12 0M${cx + widest * .78} 92q5 -6 10 0q5 -6 10 0M${width * .18} 92q4 -5 8 0q4 -5 8 0`, class: 'floe-gull' });
+  const shade = i => Math.round((i - 1) / Math.max(1, layers.length - 2) * (SEA.length - 1));
+  layers.slice(1).forEach((layer, i) => svg(art, 'rect', { x: 0, y: layer.top, width, height: layer.height + (i === layers.length - 2 ? 34 : 0), fill: SEA[shade(i + 1)] }));
+  if (layers.length > 1) { const shallows = layers[Math.max(1, Math.min(3, Math.floor(layers.length / 2)))]; [[.3, .16], [.52, .22], [.74, .12]].forEach(([at, spread]) => svg(art, 'path', { d: `M${width * at} ${water}l${-width * spread} ${shallows.top - water + (shallows === layers[1] ? shallows.height : 0)}h${width * spread * .5}z`, class: 'floe-light' })); }
+
+  // The berg: jagged facets down each side, narrow at the tip and fattest a generation down.
+  const tip = layers[0], edge = side => layers.flatMap((layer, i) => [.2, .8].map(at => [cx + side * layer.half * (i || at > .5 ? 1 : .72) * wobble(`${i}${at}${side}`, .14), layer.top + layer.height * at]));
+  const rightEdge = edge(1), leftEdge = edge(-1).reverse(), last = layers.at(-1);
+  const peak = [[cx - tip.half * .5, tip.top - 30], [cx - tip.half * .12, tip.top - 8], [cx + tip.half * .3, tip.top - 70]];
+  const keel = [[cx + last.half * .5, floor + 10], [cx + last.half * .05, floor + 2], [cx - last.half * .55, floor + 14]];
+  const outline = [...peak, ...rightEdge, ...keel, ...leftEdge];
+  const points = list => list.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+  svg(art, 'polygon', { points: points(outline), class: 'floe-ice' });
+  const spine = layers.map((layer, i) => [cx + layer.half * (hash(`s${i}`) - .5) * .5, layer.top + layer.height * .5]);
+  svg(art, 'polygon', { points: points([peak[2], ...rightEdge, keel[0], ...spine.slice().reverse()]), class: 'floe-shade' });
+  svg(art, 'path', { d: spine.map(([px, py], i) => `${i ? 'L' : 'M'}${px.toFixed(1)} ${py.toFixed(1)}`).join('') + `M${peak[2][0]} ${peak[2][1]}L${spine[0][0].toFixed(1)} ${spine[0][1].toFixed(1)}`, class: 'floe-facet' });
+  layers.forEach((layer, i) => {
+    if (!i) return;
+    const [lx, ly] = leftEdge[leftEdge.length - 1 - i * 2], [rx, ry] = rightEdge[i * 2 + 1], [sx, sy] = spine[i];
+    svg(art, 'path', { d: `M${lx.toFixed(1)} ${ly.toFixed(1)}L${((lx + sx) / 2).toFixed(1)} ${(sy + layer.height * .3).toFixed(1)}L${sx.toFixed(1)} ${sy.toFixed(1)}`, class: 'floe-facet' });
+    if (i % 2) svg(art, 'path', { d: `M${rx.toFixed(1)} ${ry.toFixed(1)}L${((rx + sx) / 2).toFixed(1)} ${(ry - layer.height * .4).toFixed(1)}`, class: 'floe-facet' });
+  });
+  svg(art, 'rect', { x: 0, y: water, width, height: height - water, class: 'floe-tint' });
+  let wave = `M0 ${water}`;
+  for (let x = 0; x < width; x += 20) wave += `q5 -5 10 0t10 0`;
+  svg(art, 'path', { d: wave, class: 'floe-waterline' });
+
+  // Films frozen into their layer: a little frame each, bigger for more stars, red when liked, with
+  // its name beside it. The names pop in a layer at a time as you scroll down into the deep.
+  layers.forEach(layer => {
+    if (!layer.group.length) return;
+    const holder = svg(art, 'g', { class: 'floe-layer' });
+    const column = 2 * layer.half * .82 / layer.perRow, left = cx - layer.half * .82;
+    const chars = Math.max(6, Math.floor((column - cell - 12) / charWidth));
+    layer.group.forEach((film, i) => {
+      const row = Math.floor(i / layer.perRow), col = i % layer.perRow;
+      const fx = left + col * column + cell / 2, fy = layer.top + head + row * rowH + rowH / 2;
+      const size = film.rating == null ? .7 : .62 + film.rating * .076, w = cell * size, h = cell * .78 * size;
+      const item = svg(holder, 'g', { class: `floe-film${film.liked ? ' liked' : ''}${film.rating == null ? ' unrated' : ''}` });
+      const frame = svg(item, 'g', { transform: `rotate(${((hash(`${film.title}r`) - .5) * 26).toFixed(1)} ${fx.toFixed(1)} ${fy.toFixed(1)})` });
+      svg(frame, 'rect', { x: (fx - w / 2).toFixed(1), y: (fy - h / 2).toFixed(1), width: w.toFixed(1), height: h.toFixed(1), rx: 1.5 });
+      svg(frame, 'rect', { x: (fx - w / 2 + 2.5).toFixed(1), y: (fy - h / 2 + 2).toFixed(1), width: Math.max(1, w - 5).toFixed(1), height: Math.max(1, h - 4).toFixed(1), class: 'floe-picture' });
+      const title = film.title || 'Untitled';
+      const name = svg(item, 'text', { x: (fx + cell / 2 + 8).toFixed(1), y: (fy + 5).toFixed(1), class: 'floe-name' }, title.length > chars ? `${title.slice(0, chars - 1).trimEnd()}…` : title);
+      name.style.transitionDelay = `${(i % 14) * 55}ms`;
+      svg(item, 'title', {}, `${title} (${film.year})${film.rating == null ? ' · unrated' : ` · ${starMarks(film.rating)}`}${film.liked ? ' · liked' : ''}`);
+    });
+  });
+  const reveal = 'IntersectionObserver' in window ? new IntersectionObserver(entries => entries.forEach(entry => {
+    if (!entry.isIntersecting && entry.boundingClientRect.top > 0) return; // still below; a layer already scrolled past counts as seen
+    entry.target.classList.add('seen'); reveal.unobserve(entry.target);
+  }), { rootMargin: '0px 0px -12% 0px' }) : null;
+  floeWatch = reveal;
+  art.querySelectorAll('.floe-layer').forEach(holder => reveal ? reveal.observe(holder) : holder.classList.add('seen'));
+
+  // Depth names down the left, and a few signs of life in the water.
+  layers.forEach((layer, i) => svg(art, 'text', { x: 12, y: layer.top + (narrow ? 26 : 30), class: `floe-label${i && shade(i) >= 3 ? ' deep' : ''}` }, layer.label));
+  [[layers.length - 2, 1], [layers.length - 1, -1]].forEach(([i, way]) => {
+    if (i < 1) return;
+    const layer = layers[i], open = cx - layer.half; if (open < 44) return;
+    const fx = open * .5, fy = layer.top + layer.height * .72;
+    const fish = svg(art, 'g', { class: `floe-fish${way < 0 ? ' back' : ''}` });
+    svg(fish, 'path', { d: `M${fx - 7 * way} ${fy}q${7 * way} -6 ${14 * way} 0q${-7 * way} 6 ${-14 * way} 0zM${fx - 7 * way} ${fy}l${-6 * way} -4v8z` });
+  });
+  const bubbles = svg(art, 'g', { class: 'floe-bubbles' });
+  [[-.3, 0, 2.5], [-.36, -12, 1.8], [-.27, -24, 1.4]].forEach(([at, up, r]) => svg(bubbles, 'circle', { cx: (cx + last.half * at).toFixed(1), cy: (floor + up).toFixed(1), r }));
+  svg(art, 'path', { d: `M0 ${floor + 22}q${width * .15} -12 ${width * .3} -2t${width * .35} 0t${width * .35} -4V${height}H0z`, class: 'floe-bed' });
+  const weed = svg(art, 'g', { class: 'floe-weed' });
+  svg(weed, 'path', { d: `M${width * .06} ${floor + 22}q-5 -6 0 -12t0 -12M${width * .09} ${floor + 21}q4 -5 0 -10t0 -9` });
+
+  // A sounding line from the boat to the deepest film.
+  const deepest = layers.length - 1;
+  const bx = width - right / 2 - 2;
+  const boat = svg(art, 'g', { class: 'floe-boat' });
+  svg(boat, 'path', { d: `M${bx - 15} ${water - 8}h30l-6 9h-18z`, class: 'floe-hull' });
+  svg(boat, 'path', { d: `M${bx - 2} ${water - 8}v-22`, class: 'floe-mast' });
+  svg(boat, 'path', { d: `M${bx - 1} ${water - 30}l13 5 -13 5z`, class: 'floe-flag' });
+  if (deepest > 0) {
+    const depth = layers[deepest].top + layers[deepest].height * .5;
+    svg(art, 'path', { d: `M${bx + 6} ${water - 6}V${depth}`, class: 'floe-line' });
+    layers.slice(1, deepest + 1).forEach(layer => svg(art, 'path', { d: `M${bx + 3} ${layer.top}h6`, class: 'floe-knot' }));
+    svg(art, 'path', { d: `M${bx + 3} ${depth}h6l2 9h-10z`, class: 'floe-lead' });
+  }
+
+  art.setAttribute('aria-label', layers.map(layer => `${layer.group.length} from ${layer.name}`).join(', '));
+  if (dated.length < 3) { note.textContent = 'Too few films with release years to sound the depths.'; return; }
+  const share = test => dated.filter(film => test(Math.max(0, NOW_YEAR - film.year))).length / dated.length;
+  const oldest = last.group.at(-1), span = NOW_YEAR - oldest.year;
+  const notes = [share(age => age <= 1) >= .5 ? 'Most of what you watch is brand new: this year’s and last year’s releases.'
+    : share(age => age > 25) >= .5 ? 'Your iceberg runs deep: most of what you watch is older than a generation.'
+    : share(age => age <= 5) >= .6 ? 'Most of your ice is recent, from the last few years.'
+    : 'Your films spread across the decades.'];
+  if (layers.length < 2) notes.push('Every film here came out the same year, so the ice is a single layer.');
+  else notes.push(`Your deepest dive: ${oldest.title || 'an untitled film'}, from ${depthName(oldest.year, oldest.year)}.`);
+  if (span <= 10 && layers.length > 2) notes.push('The whole iceberg fits inside a decade, so each layer is only a year or so thick.');
+  else if (span > 50 && layers.length >= 6) notes.push('You have ice at nearly every depth.');
+  note.textContent = notes.join(' ');
+}
+
 function renderExtras(data) {
   const section = $('#extras'); if (!section) return;
   const films = data.recent || [];
@@ -406,6 +580,7 @@ function renderExtras(data) {
   drawMeter(films);
   drawHearts(films);
   drawEra(films);
+  drawFloe(films);
 
 }
 
